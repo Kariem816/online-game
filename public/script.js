@@ -17,10 +17,12 @@ const TEAM_ID = enumJS({}, [
 ])
 
 // Tile Types
-const EmptyTile = 0;
-const TeamATile = 1;
-const TeamBTile = 2;
-const WallTile = 3;
+const Tiles = enumJS({}, [
+    "EmptyTile",
+	"TeamATile",
+	"TeamBTile",
+	"WallTile",
+]);
 
 // Screens
 const Screens = enumJS({}, [
@@ -352,25 +354,25 @@ class Game {
                 const cornerY = newY - Math.floor(newY) > 0;
 
                 if (player.vx > 0) {
-                    if (right === WallTile || (cornerY && bottomRight === WallTile)) {
+                    if (right === Tiles.WallTile || (cornerY && bottomRight === Tiles.WallTile)) {
                         newX = Math.floor(newX);
                     }
                 }
 
                 if (player.vx < 0) {
-                    if (tile === WallTile || (cornerY && bottom === WallTile)) {
+                    if (tile === Tiles.WallTile || (cornerY && bottom === Tiles.WallTile)) {
                         newX = Math.ceil(newX);
                     }
                 }
 
                 if (player.vy > 0) {
-                    if (bottom === WallTile || (cornerX && bottomRight === WallTile)) {
+                    if (bottom === Tiles.WallTile || (cornerX && bottomRight === Tiles.WallTile)) {
                         newY = Math.floor(newY);
                     }
                 }
 
                 if (player.vy < 0) {
-                    if (tile === WallTile || (cornerX && right === WallTile)) {
+                    if (tile === Tiles.WallTile || (cornerX && right === Tiles.WallTile)) {
                         newY = Math.ceil(newY);
                     }
                 }
@@ -463,18 +465,18 @@ class Game {
                 const y = Math.floor(i / mapWidth) + mapHeightOffset;
 
                 switch (this.map.getTileByIndex(i)) {
-                    case EmptyTile: {
+                    case Tiles.EmptyTile: {
                         // Empty
                     } break;
-                    case TeamATile: {
+                    case Tiles.TeamATile: {
                         this.ctx.fillStyle = teamAColor;
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                     } break;
-                    case TeamBTile: {
+                    case Tiles.TeamBTile: {
                         this.ctx.fillStyle = teamBColor;
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                     } break;
-                    case WallTile: {
+                    case Tiles.WallTile: {
                         this.ctx.fillStyle = "#FFA823";
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                     } break;
