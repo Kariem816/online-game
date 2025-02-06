@@ -4,26 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"online-game/consts"
 	"online-game/msgs"
 	"online-game/types"
+	"strings"
 	"time"
 )
-
-const TickRate = 30
-const GameTick = time.Millisecond * 1000 / TickRate
-const MapTick = TickRate * 5 // every 5 seconds
-
-const MaxPlayers = 8
-const GameDuration = 60 * time.Second
-const PlayerSpeed = 10
-
-const MapWidth = 48
-const MapHeight = 27
 
 type Game struct {
 	Players Players
 	State   types.GameState
-	Host    int16
+	Host    types.UserID
 	Room    string
 	LC      bool // large change
 
@@ -33,23 +24,23 @@ type Game struct {
 
 var Games = []*Game{}
 
-type CellResult struct {
-	X     int
-	Y     int
-	State types.Tile
-}
+// var baseWeapons = []weapons.Weapon{
+// 	weapons.NewGun(),
+// }
 
 func NewGame(host *User) string {
-	room := "" // a random string
+	var sb strings.Builder
 	for i := 0; i < 4; i++ {
-		room += string(rune(65 + rand.Intn(26)))
+		sb.WriteRune(rune(65 + rand.Intn(26)))
 	}
+	room := sb.String()
+
 	player := host.ToPlayer(TeamA)
 	game := &Game{
 		Players: Players{
 			player,
 		},
-		State: *NewGameState(MapWidth, MapHeight),
+		State: *NewGameState(consts.MapWidth, consts.MapHeight),
 		Host:  host.ID,
 		Room:  room,
 		LC:    true,
@@ -67,7 +58,7 @@ func FindGameByRoom(room string) *Game {
 	return nil
 }
 
-func FindUserInfo(userId int16) *Game {
+func FindUserInfo(userId types.UserID) *Game {
 	for _, game := range Games {
 		for _, player := range game.Players {
 			if player.User.ID == userId {
@@ -79,7 +70,7 @@ func FindUserInfo(userId int16) *Game {
 }
 
 func (g *Game) AddUser(user *User) error {
-	if len(g.Players) >= MaxPlayers {
+	if len(g.Players) >= consts.MaxPlayers {
 		return errors.New("game is full")
 	}
 
@@ -100,7 +91,7 @@ func (g *Game) AddUser(user *User) error {
 	return nil
 }
 
-func (g *Game) RemovePlayer(userId int16) {
+func (g *Game) RemovePlayer(userId types.UserID) {
 	for i, p := range g.Players {
 		if p.User.ID == userId {
 			g.Players = append(g.Players[:i], g.Players[i+1:]...)
@@ -119,7 +110,7 @@ func (g *Game) RemovePlayer(userId int16) {
 	g.LC = true
 }
 
-func (g *Game) GetPlayer(userId int16) *Player {
+func (g *Game) GetPlayer(userId types.UserID) *Player {
 	for _, player := range g.Players {
 		if player.User.ID == userId {
 			return player
@@ -128,7 +119,7 @@ func (g *Game) GetPlayer(userId int16) *Player {
 	return nil
 }
 
-func (g *Game) SwitchTeams(userId int16) error {
+func (g *Game) SwitchTeams(userId types.UserID) error {
 	if g.State.Phase != WaitingForPlayers {
 		return errors.New("game has already started")
 	}
@@ -148,7 +139,7 @@ func (g *Game) SwitchTeams(userId int16) error {
 	return nil
 }
 
-func (g *Game) Start(userId int16) error {
+func (g *Game) Start(userId types.UserID) error {
 	if g.State.Phase == Playing {
 		return errors.New("game has already started")
 	}
@@ -179,7 +170,7 @@ func (g *Game) Start(userId int16) error {
 	if g.State.Phase == WaitingForPlayers { // First game
 		Clear(&g.State.GameMap)
 	} else {
-		g.State = *NewGameState(MapWidth, MapHeight)
+		g.State = *NewGameState(consts.MapWidth, consts.MapHeight)
 	}
 
 	g.BroadcastMap()
@@ -190,9 +181,9 @@ func (g *Game) Start(userId int16) error {
 
 	for _, player := range g.Players {
 		for {
-			player.X = rand.Float64() * float64(g.State.GameMap.Width)
-			player.Y = rand.Float64() * float64(g.State.GameMap.Height)
-			if Get(&g.State.GameMap, int(player.X), int(player.Y)) != WallTile {
+			player.Pos.X = rand.Float32() * float32(g.State.GameMap.Width)
+			player.Pos.Y = rand.Float32() * float32(g.State.GameMap.Height)
+			if Get(&g.State.GameMap, int32(player.Pos.X+0.5), int32(player.Pos.Y+0.5)) != WallTile {
 				break
 			}
 		}
@@ -201,49 +192,59 @@ func (g *Game) Start(userId int16) error {
 	return nil
 }
 
-func (g *Game) MovePlayer(userId int16, direction string, start bool) {
+func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
 	player := g.GetPlayer(userId)
 	if player != nil {
 		player.Move(direction, start)
 	}
 }
 
-func (g *Game) Shoot(userId int16) (CellResult, error) {
+func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
 	player := g.GetPlayer(userId)
 	if player == nil {
-		return CellResult{}, errors.New("player not found")
+		return []types.CellResult{}, errors.New("player not found")
 	}
 
-	x := int(player.X + 0.5)
-	y := int(player.Y + 0.5)
+	attacked := player.Shoot(&g.State.GameMap)
 
-	curr := Get(&g.State.GameMap, x, y)
-	if curr == WallTile {
-		return CellResult{}, errors.New("cannot paint wall")
-	}
-	switch curr {
-	case TeamATile:
-		g.State.ScoreA--
-	case TeamBTile:
-		g.State.ScoreB--
+	if len(attacked) == 0 {
+		return []types.CellResult{}, nil
 	}
 
-	var newTile types.Tile
-	switch player.Team {
-	case TeamA:
-		newTile = TeamATile
-		g.State.ScoreA++
-	case TeamB:
-		newTile = TeamBTile
-		g.State.ScoreB++
-	}
-	Set(&g.State.GameMap, x, y, newTile)
+	results := make([]types.CellResult, len(attacked))
+	for i, tile := range attacked {
+		x, y := tile.X, tile.Y
+		tile := Get(&g.State.GameMap, x, y)
+		if tile == WallTile {
+			continue
+		}
 
-	return CellResult{
-		X:     x,
-		Y:     y,
-		State: newTile,
-	}, nil
+		switch tile {
+		case TeamATile:
+			g.State.ScoreA--
+		case TeamBTile:
+			g.State.ScoreB--
+		}
+
+		var newTile types.Tile
+		switch player.Team {
+		case TeamA:
+			newTile = TeamATile
+			g.State.ScoreA++
+		case TeamB:
+			newTile = TeamBTile
+			g.State.ScoreB++
+		}
+		Set(&g.State.GameMap, x, y, newTile)
+
+		results[i] = types.CellResult{
+			X:     x,
+			Y:     y,
+			State: newTile,
+		}
+	}
+
+	return results, nil
 }
 
 func (g *Game) Update() {
@@ -255,7 +256,7 @@ func (g *Game) Update() {
 	for _, player := range g.Players {
 		player.Update(&gameMap)
 	}
-	if time.Since(g.StartedAt) > GameDuration {
+	if time.Since(g.StartedAt) > consts.GameDuration {
 		g.Finish()
 	}
 }
@@ -279,7 +280,7 @@ func (g *Game) Terminate() {
 	}
 }
 
-func (g *Game) Broadcast(message msgs.ServerMessage, exclude ...int16) {
+func (g *Game) Broadcast(message msgs.ServerMessage, exclude ...types.UserID) {
 	b, _ := message.Buffer()
 	buf := b.Bytes()
 
@@ -294,13 +295,13 @@ PlayerLoop:
 	}
 }
 
-func (g *Game) BroadcastMap(exclude ...int16) {
+func (g *Game) BroadcastMap(exclude ...types.UserID) {
 	g.Broadcast(msgs.MapMessage{
 		Map: g.State.GameMap,
 	})
 }
 
-func (g *Game) BroadcastState(exclude ...int16) {
+func (g *Game) BroadcastState(exclude ...types.UserID) {
 	// fmt.Printf("Started At: %v\r\nUnix: %d\r\n int32: %d\r\n", g.StartedAt, int32(g.StartedAt.Unix()), int32(g.StartedAt.Unix()))
 	g.Broadcast(msgs.StateMessage{
 		Host:      g.Host,
@@ -318,7 +319,7 @@ func (g *Game) BroadcastState(exclude ...int16) {
 	})
 }
 
-func (g *Game) BroadcastSystem(msgType uint8, msg string, exclude ...int16) {
+func (g *Game) BroadcastSystem(msgType uint8, msg string, exclude ...types.UserID) {
 	mapped := msgs.SystemMessage{
 		Type:    msgs.SYS_MSG_INFO,
 		Message: msg,

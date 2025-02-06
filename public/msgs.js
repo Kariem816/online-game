@@ -1,32 +1,32 @@
 // messages
-const MESSAGES = {};
-
-MESSAGES[MESSAGES["MSG_CNCT"] = 0] = "MSG_CNCT";
-MESSAGES[MESSAGES["MSG_HOST"] = 1] = "MSG_HOST";
-MESSAGES[MESSAGES["MSG_HOSTED"] = 2] = "MSG_HOSTED";
-MESSAGES[MESSAGES["MSG_JOIN"] = 3] = "MSG_JOIN";
-MESSAGES[MESSAGES["MSG_JOINED"] = 4] = "MSG_JOINED";
-MESSAGES[MESSAGES["MSG_LEAVE"] = 5] = "MSG_LEAVE";
-MESSAGES[MESSAGES["MSG_LEFT"] = 6] = "MSG_LEFT";
-MESSAGES[MESSAGES["MSG_START"] = 7] = "MSG_START";
-MESSAGES[MESSAGES["MSG_STARTED"] = 8] = "MSG_STARTED";
-MESSAGES[MESSAGES["MSG_TEAM"] = 9] = "MSG_TEAM";
-MESSAGES[MESSAGES["MSG_TEAMED"] = 10] = "MSG_TEAMED";
-MESSAGES[MESSAGES["MSG_MOVE"] = 11] = "MSG_MOVE";
-MESSAGES[MESSAGES["MSG_MOVED"] = 12] = "MSG_MOVED";
-MESSAGES[MESSAGES["MSG_SHOOT"] = 13] = "MSG_SHOOT";
-MESSAGES[MESSAGES["MSG_SHOT"] = 14] = "MSG_SHOT";
-MESSAGES[MESSAGES["MSG_CHAT"] = 15] = "MSG_CHAT";
-MESSAGES[MESSAGES["MSG_CHATTED"] = 16] = "MSG_CHATTED";
-MESSAGES[MESSAGES["MSG_MAP"] = 17] = "MSG_MAP";
-MESSAGES[MESSAGES["MSG_STATE"] = 18] = "MSG_STATE";
-MESSAGES[MESSAGES["MSG_SYSTEM"] = 19] = "MSG_SYSTEM";
-MESSAGES[MESSAGES["MSG_ERROR"] = 20] = "MSG_ERROR";
-MESSAGES[MESSAGES["MSG_LEN"] = 21] = "MSG_LEN";
+const MESSAGES = enumJS({}, [
+    "MSG_CNCT",
+	"MSG_HOST",
+	"MSG_HOSTED",
+	"MSG_JOIN",
+	"MSG_JOINED",
+	"MSG_LEAVE",
+	"MSG_LEFT",
+	"MSG_START",
+	"MSG_STARTED",
+	"MSG_TEAM",
+	"MSG_TEAMED",
+	"MSG_MOVE",
+	"MSG_MOVED",
+	"MSG_SHOOT",
+	"MSG_SHOT",
+	"MSG_CHAT",
+	"MSG_CHATTED",
+	"MSG_MAP",
+	"MSG_STATE",
+	"MSG_SYSTEM",
+	"MSG_ERROR",
+]);
 
 // system messages
-const SYSTEM_MESSAGES = {};
-SYSTEM_MESSAGES[SYSTEM_MESSAGES["SYS_MSG_INFO"] = 0] = "SYS_MSG_INFO";
+const SYSTEM_MESSAGES = enumJS({}, [
+    "SYS_MSG_INFO",
+]);
 
 // helpers
 function getUint8(data, state) {
@@ -53,9 +53,9 @@ function getInt32(data, state) {
     return int32
 }
 
-function getFloat64(data, state) {
-    const float64 = data.getFloat64(state.i, true);
-    state.i += 8;
+function getFloat32(data, state) {
+    const float64 = data.getFloat32(state.i, true);
+    state.i += 4;
     return float64
 }
 
@@ -95,9 +95,16 @@ function decodeMsg(msg) {
         case "MSG_LEFT":
             break;
         case "MSG_SHOT":
-            data.x = getInt32(view, state);
-            data.y = getInt32(view, state);
-            data.state = getUint8(view, state);
+            const length = getUint8(view, state);
+            data.cells = [];
+            for (let i = 0; i < length; i++) {
+                const cell = {
+                    x: getInt32(view, state),
+                    y: getInt32(view, state),
+                    state: getUint8(view, state),
+                };
+                data.cells.push(cell);
+            }
             break;
         case "MSG_CHATTED":
             data.from = getInt16(view, state);
@@ -136,8 +143,8 @@ function decodeMsg(msg) {
                         id: getInt16(view, state),
                     },
                     team: getUint8(view, state),
-                    x: getFloat64(view, state),
-                    y: getFloat64(view, state),
+                    x: getFloat32(view, state),
+                    y: getFloat32(view, state),
                     vx: getInt32(view, state),
                     vy: getInt32(view, state),
                 });

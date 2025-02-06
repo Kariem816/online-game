@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"online-game/types"
+
+	"github.com/gofiber/fiber/v2/log"
 )
 
 type ServerMessage interface {
@@ -16,7 +18,7 @@ type GenericMessage struct {
 }
 
 type ConnectedMessage struct {
-	ID       int16
+	ID       types.UserID
 	Username string
 }
 
@@ -50,10 +52,10 @@ type MoveMessage struct {
 type MovedMessage struct{}
 
 type ShootMessage struct{}
+
+// TODO: maybe introduce a new structure to hold cells for separation of concerns
 type ShotMessage struct {
-	X     int
-	Y     int
-	State types.Tile
+	Cells []types.CellResult
 }
 
 type ChatMessage struct {
@@ -61,7 +63,7 @@ type ChatMessage struct {
 }
 type ChattedMessage struct {
 	Message string
-	From    int16
+	From    types.UserID
 }
 
 type MapMessage struct {
@@ -69,7 +71,7 @@ type MapMessage struct {
 }
 
 type StateMessage struct {
-	Host      int16
+	Host      types.UserID
 	Room      string
 	Started   bool
 	StartedAt int32
@@ -278,10 +280,17 @@ func (gm GenericMessage) ParseShootMessage() (ShootMessage, bool) {
 func (sm ShotMessage) Buffer() (*bytes.Buffer, bool) {
 	buf := &bytes.Buffer{}
 
+	l := len(sm.Cells)
+	if l > 255 {
+		log.Fatalf("WTF have you done? updating %d cells at the same time", l)
+	}
 	buf.WriteByte(MSG_SHOT)
-	binary.Write(buf, binary.LittleEndian, int32(sm.X))
-	binary.Write(buf, binary.LittleEndian, int32(sm.Y))
-	buf.WriteByte(byte(sm.State))
+	buf.WriteByte(uint8(l))
+	for _, c := range sm.Cells {
+		binary.Write(buf, binary.LittleEndian, c.X)
+		binary.Write(buf, binary.LittleEndian, c.Y)
+		buf.WriteByte(byte(c.State))
+	}
 
 	return buf, true
 }
@@ -343,10 +352,8 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	for _, player := range sm.Players {
 		binary.Write(buf, binary.LittleEndian, player.User.ID)
 		binary.Write(buf, binary.LittleEndian, player.Team)
-		binary.Write(buf, binary.LittleEndian, player.X)
-		binary.Write(buf, binary.LittleEndian, player.Y)
-		binary.Write(buf, binary.LittleEndian, player.VX)
-		binary.Write(buf, binary.LittleEndian, player.VY)
+		player.Pos.Write(buf)
+		player.Vel.Write(buf)
 		binary.Write(buf, binary.LittleEndian, uint8(len(player.User.Username)))
 		buf.WriteString(player.User.Username)
 	}

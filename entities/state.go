@@ -19,11 +19,11 @@ const (
 	GameOver          types.GamePhase = iota
 )
 
-func RandMN(m int, n int) int {
-	return m + rand.Intn(n-m)
+func RandMN(m, n int32) int32 {
+	return m + rand.Int31n(n-m)
 }
 
-func NewGameState(width, height int) *types.GameState {
+func NewGameState(width, height int32) *types.GameState {
 	gameMap := types.GameMap{
 		Width:  width,
 		Height: height,
@@ -46,7 +46,7 @@ func NewGameState(width, height int) *types.GameState {
 	}
 }
 
-func RandomGameState(width, height int) *types.GameState {
+func RandomGameState(width, height int32) *types.GameState {
 	gameState := NewGameState(width, height)
 
 	// Fill the map with random team tiles
@@ -63,7 +63,7 @@ func RandomGameState(width, height int) *types.GameState {
 	return gameState
 }
 
-func Get(m *types.GameMap, x, y int) types.Tile {
+func Get(m *types.GameMap, x, y int32) types.Tile {
 	if x < 0 || x >= m.Width || y < 0 || y >= m.Height {
 		return WallTile
 	}
@@ -71,7 +71,7 @@ func Get(m *types.GameMap, x, y int) types.Tile {
 	return m.Tiles[y*m.Width+x]
 }
 
-func GetAround(m *types.GameMap, x, y int) (tile, bottom, right, bottomRight types.Tile) {
+func GetAround(m *types.GameMap, x, y int32) (tile, bottom, right, bottomRight types.Tile) {
 	tile = Get(m, x, y)
 	bottom = Get(m, x, y+1)
 	right = Get(m, x+1, y)
@@ -79,7 +79,7 @@ func GetAround(m *types.GameMap, x, y int) (tile, bottom, right, bottomRight typ
 	return
 }
 
-func Set(m *types.GameMap, x, y int, tile types.Tile) {
+func Set(m *types.GameMap, x, y int32, tile types.Tile) {
 	if x < 0 || x >= m.Width || y < 0 || y >= m.Height {
 		return
 	}
@@ -99,7 +99,7 @@ func generateWalls(m *types.GameMap, divisions int) {
 	generateWallsInRange(m, 0, 0, m.Width-1, m.Height-1, divisions)
 }
 
-func generateWallsInRange(m *types.GameMap, x1, y1, x2, y2 int, divisions int) {
+func generateWallsInRange(m *types.GameMap, x1, y1, x2, y2 int32, divisions int) {
 	// use BSP to generate walls
 	if divisions == 0 {
 		return

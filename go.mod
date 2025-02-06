@@ -3,10 +3,15 @@ module online-game
 go 1.22.4
 
 require (
-	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/fasthttp/websocket v1.5.10 // indirect
 	github.com/gofiber/contrib/websocket v1.3.2 // direct
 	github.com/gofiber/fiber/v2 v2.52.5 // direct
+)
+
+require github.com/chewxy/math32 v1.11.1
+
+require (
+	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/fasthttp/websocket v1.5.10 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

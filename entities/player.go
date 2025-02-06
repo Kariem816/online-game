@@ -1,8 +1,11 @@
 package entities
 
 import (
-	"math"
+	"online-game/consts"
 	"online-game/types"
+	"online-game/types/omath"
+
+	"github.com/chewxy/math32"
 )
 
 const (
@@ -13,10 +16,9 @@ const (
 type Player struct {
 	User *User
 	Team types.TeamID
-	X    float64
-	Y    float64
-	VX   int
-	VY   int
+	// Weapon weapons.Weapon
+	Pos omath.Vector2
+	Vel omath.IVector2
 }
 type Players []*Player
 
@@ -32,10 +34,8 @@ func (p Players) Foo() []types.StateMessagePlayer {
 func (p *Player) ToStateMessagePlayer() types.StateMessagePlayer {
 	return types.StateMessagePlayer{
 		Team: p.Team,
-		X:    p.X,
-		Y:    p.Y,
-		VX:   int32(p.VX),
-		VY:   int32(p.VY),
+		Pos:  p.Pos,
+		Vel:  p.Vel,
 		User: types.StateMessageUser{
 			ID:       p.User.ID,
 			Username: p.User.Username,
@@ -47,69 +47,75 @@ func (p *Player) Move(direction string, start bool) {
 	if start {
 		switch direction {
 		case "up":
-			p.VY += -1
+			p.Vel.Y += -1
 		case "down":
-			p.VY += 1
+			p.Vel.Y += 1
 		case "left":
-			p.VX += -1
+			p.Vel.X += -1
 		case "right":
-			p.VX += 1
+			p.Vel.X += 1
 		}
 	} else {
 		switch direction {
 		case "up":
-			p.VY -= -1
+			p.Vel.Y -= -1
 		case "down":
-			p.VY -= 1
+			p.Vel.Y -= 1
 		case "left":
-			p.VX -= -1
+			p.Vel.X -= -1
 		case "right":
-			p.VX -= 1
+			p.Vel.X -= 1
 		}
 	}
 	// Clamp the direction
-	p.VX = int(math.Min(math.Max(float64(p.VX), -1), 1))
-	p.VY = int(math.Min(math.Max(float64(p.VY), -1), 1))
+	p.Vel.X = int32(math32.Min(math32.Max(float32(p.Vel.X), -1), 1))
+	p.Vel.Y = int32(math32.Min(math32.Max(float32(p.Vel.Y), -1), 1))
 }
 
 func (p *Player) Update(gameMap *types.GameMap) {
-	newX := p.X + float64(p.VX)*PlayerSpeed*float64(GameTick.Seconds())
-	newY := p.Y + float64(p.VY)*PlayerSpeed*float64(GameTick.Seconds())
+	newX := p.Pos.X + float32(p.Vel.X)*consts.PlayerSpeed*float32(consts.GameTick.Seconds())
+	newY := p.Pos.Y + float32(p.Vel.Y)*consts.PlayerSpeed*float32(consts.GameTick.Seconds())
 
-	tile, bottom, right, bottomRight := GetAround(gameMap, int(math.Floor(newX)), int(math.Floor(newY)))
-	cornerX := newX-math.Floor(newX) > 0
-	cornerY := newY-math.Floor(newY) > 0
+	tile, bottom, right, bottomRight := GetAround(gameMap, int32(math32.Floor(newX)), int32(math32.Floor(newY)))
+	cornerX := newX-math32.Floor(newX) > 0
+	cornerY := newY-math32.Floor(newY) > 0
 
 	// Check for collisions
-	if p.VX > 0 { // Moving right
+	if p.Vel.X > 0 { // Moving right
 		if right == WallTile || (cornerY && bottomRight == WallTile) {
-			newX = math.Floor(newX)
+			newX = math32.Floor(newX)
 		}
 	}
 
-	if p.VX < 0 { // Moving left
+	if p.Vel.X < 0 { // Moving left
 		if tile == WallTile || (cornerY && bottom == WallTile) {
-			newX = math.Ceil(newX)
+			newX = math32.Ceil(newX)
 		}
 	}
 
-	if p.VY > 0 { // Moving down
+	if p.Vel.Y > 0 { // Moving down
 		if bottom == WallTile || (cornerX && bottomRight == WallTile) {
-			newY = math.Floor(newY)
+			newY = math32.Floor(newY)
 		}
 	}
 
-	if p.VY < 0 { // Moving up
+	if p.Vel.Y < 0 { // Moving up
 		if tile == WallTile || (cornerX && right == WallTile) {
-			newY = math.Ceil(newY)
+			newY = math32.Ceil(newY)
 		}
 	}
 
-	p.X = newX
-	p.Y = newY
+	p.Pos.X = newX
+	p.Pos.Y = newY
+}
+
+func (p *Player) Shoot(m *types.GameMap) []omath.IVector2 {
+	x := int32(p.Pos.X + 0.5)
+	y := int32(p.Pos.Y + 0.5)
+	return []omath.IVector2{{X: x, Y: y}}
 }
 
 func (p *Player) Reset() {
-	p.VX = 0
-	p.VY = 0
+	p.Vel.X = 0
+	p.Vel.Y = 0
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"online-game/consts"
 	"online-game/entities"
 	"online-game/msgs"
 	"online-game/types"
@@ -50,11 +51,9 @@ func BroadcastMap() {
 	}
 }
 
-func updateMap(game *entities.Game, cellX, cellY int, state types.Tile) {
+func updateMap(game *entities.Game, cells []types.CellResult) {
 	msg := msgs.ShotMessage{
-		X:     cellX,
-		Y:     cellY,
-		State: state,
+		Cells: cells,
 	}
 	buf, _ := msg.Buffer()
 	by := buf.Bytes()
@@ -72,10 +71,10 @@ func main() {
 
 	go func() {
 		i := 0
-		for range time.Tick(entities.GameTick) {
+		for range time.Tick(consts.GameTick) {
 			UpdateState()
 			BroadcastState()
-			if i%entities.MapTick == 0 {
+			if i%consts.MapTick == 0 {
 				BroadcastMap()
 			}
 			i++
@@ -90,7 +89,7 @@ func main() {
 	})
 
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
-		id := int16(rand.Int31() % 65536)
+		id := types.UserID(rand.Int31() % 65536)
 		user := entities.NewUser(c, id, randomName())
 		cm := msgs.ConnectedMessage{ID: id, Username: user.Username}
 		user.SendMessage(cm)
@@ -233,11 +232,11 @@ func main() {
 					log.Println("[ERROR]: ParseShootMessage", gmsg)
 				}
 
-				cell, err := game.Shoot(id)
+				cells, err := game.Shoot(id)
 				if err != nil {
 					user.Error(err.Error())
 				} else {
-					updateMap(game, cell.X, cell.Y, cell.State)
+					updateMap(game, cells)
 				}
 			case msgs.MSG_CHAT:
 				// TODO: Add support for commands

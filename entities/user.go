@@ -9,15 +9,15 @@ import (
 )
 
 type User struct {
-	ID       int16
+	ID       types.UserID
 	Username string
 	C        *websocket.Conn
 	mu       sync.Mutex
 }
 
-var Users = map[int16]*User{}
+var Users = map[types.UserID]*User{}
 
-func NewUser(c *websocket.Conn, id int16, username string) *User {
+func NewUser(c *websocket.Conn, id types.UserID, username string) *User {
 	user := &User{
 		ID:       id,
 		Username: username,

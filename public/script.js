@@ -12,9 +12,18 @@ let isServerUpdated = false;
 const playerSpeed = 10;
 const gameDuration = 60 * 1000; // 1 minute
 // Game States
-const WaitingForPlayers = 0;
-const Playing = 1;
-const GameOver = 2;
+const GAME_PHASES = enumJS({}, [
+    "WaitingForPlayers",
+    "Playing",
+    "GameOver",
+])
+
+// Teams
+const TEAM_ID = enumJS({}, [
+    "TeamA",
+    "TeamB",
+])
+
 // Tile Types
 const EmptyTile = 0;
 const TeamATile = 1;
@@ -255,35 +264,35 @@ function tick(ts) {
     }
 
     // Sidebar
-    const sidebarCenter = hOffset + hRest / 2;
-    // score
-    const score = gameState.state.phase === WaitingForPlayers ? "-" : `${gameState.state.scoreA} - ${gameState.state.scoreB}`;
-    ctx.fillStyle = "#f0f0f0";
-    ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
+        const sidebarCenter = hOffset + hRest / 2;
+        // score
+        const score = gameState.state.phase === GAME_PHASES.WaitingForPlayers ? "-" : `${gameState.state.scoreA} - ${gameState.state.scoreB}`;
+        ctx.fillStyle = "#f0f0f0";
+        ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
 
-    // Teams
-    const teamA = gameState.players.filter((p) => p.team === 0);
-    const teamB = gameState.players.filter((p) => p.team === 1);
-    const squareSize = wOffset - 20;
+        // Teams
+        const teamA = gameState.players.filter((p) => p.team === TEAM_ID.TeamA);
+        const teamB = gameState.players.filter((p) => p.team === TEAM_ID.TeamB);
+        const squareSize = wOffset - 20;
 
-    // team A
-    ctx.fillStyle = teamAColor;
-    ctx.fillRect(10, sidebarCenter - 30 - squareSize, squareSize, squareSize);
-    ctx.fillStyle = "#f0f0f0";
-    ctx.fillText(`Team A (${teamA.length})`, wOffset / 2, sidebarCenter - 55 - squareSize, wOffset - 20);
+        // team A
+        ctx.fillStyle = teamAColor;
+        ctx.fillRect(10, sidebarCenter - 30 - squareSize, squareSize, squareSize);
+        ctx.fillStyle = "#f0f0f0";
+        ctx.fillText(`Team A (${teamA.length})`, wOffset / 2, sidebarCenter - 55 - squareSize, wOffset - 20);
 
-    // team B
-    ctx.fillStyle = teamBColor;
-    ctx.fillRect(10, sidebarCenter + 30, squareSize, squareSize);
-    ctx.fillStyle = "#f0f0f0";
-    ctx.fillText(`Team B (${teamB.length})`, wOffset / 2, sidebarCenter + 55 + squareSize, wOffset - 20);
+        // team B
+        ctx.fillStyle = teamBColor;
+        ctx.fillRect(10, sidebarCenter + 30, squareSize, squareSize);
+        ctx.fillStyle = "#f0f0f0";
+        ctx.fillText(`Team B (${teamB.length})`, wOffset / 2, sidebarCenter + 55 + squareSize, wOffset - 20);
 
     // Map
     ctx.fillStyle = "#FFD35A";
-    ctx.fillRect(wOffset, hOffset, wRest, hRest);
+        ctx.fillRect(wOffset, hOffset, wRest, hRest);
 
     // Render map
-    if (gameState.started) {
+    if (gameState.state.phase === GAME_PHASES.Playing) {
         const { width: mapWidth, height: mapHeight } = map;
         const cellWidth = Math.floor(wRest / mapWidth);
         const mapWidthOffset = wOffset / cellWidth;
@@ -314,47 +323,43 @@ function tick(ts) {
         }
 
         // Render players
-        if (gameState.state.phase === 1) {
-            for (const player of gameState.players) {
-                const x = player.x + mapWidthOffset;
-                const y = player.y + mapHeightOffset;
-                const color = player.team === 0 ? teamAColor : teamBColor;
+        for (const player of gameState.players) {
+            const x = player.x + mapWidthOffset;
+            const y = player.y + mapHeightOffset;
+            const color = player.team === 0 ? teamAColor : teamBColor;
 
-                if (player.user.id === myData.id) {
-                    ctx.fillStyle = myData.id === gameState.host ? "#fcbe03" : "#ffffff";
-                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    ctx.fillStyle = color;
-                    ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
-                } else if (player.user.id === gameState.host) {
-                    ctx.fillStyle = "#fcbe03";
-                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    ctx.fillStyle = color;
-                    ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
-                } else {
-                    ctx.fillStyle = color;
-                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                }
+            if (player.user.id === myData.id) {
+                ctx.fillStyle = myData.id === gameState.host ? "#fcbe03" : "#ffffff";
+                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                ctx.fillStyle = color;
+                ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
+            } else if (player.user.id === gameState.host) {
+                ctx.fillStyle = "#fcbe03";
+                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                ctx.fillStyle = color;
+                ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
+            } else {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
             }
         }
     } else {
         ctx.fillStyle = "#353535";
         ctx.font = "60px Arial";
         switch (gameState.state.phase) {
-            case WaitingForPlayers: {
-                ctx.fillText("Waiting for players", wOffset + wRest / 2, hOffset + hRest / 2);
+            case GAME_PHASES.WaitingForPlayers: {
+                ctx.fillText("Waiting for players", width / 2, hOffset + hRest / 2);
             } break;
-            case GameOver: {
+            case GAME_PHASES.GameOver: {
                 const winner = gameState.state.scoreA > gameState.state.scoreB ? "Team A Wins"
                     : gameState.state.scoreA === gameState.state.scoreB ? "It's a Tie" : "Team B Wins";
-                ctx.fillText(`Game Over! ${winner}`, wOffset + wRest / 2, hOffset + hRest / 2);
+                ctx.fillText(`Game Over! ${winner}`, width / 2, hOffset + hRest / 2);
             } break;
         }
     }
 
     requestAnimationFrame(tick);
 }
-
-requestAnimationFrame(tick);
 
 function appendMessage(from, message) {
     const chatBox = document.getElementById("chatBox");
@@ -732,8 +737,10 @@ function setupWSListeners(ws, handlers, root) {
                 break;
             case "MSG_SHOT":
                 {
-                    const { x, y, state } = msg.data;
-                    game.map.tiles[y * game.map.width + x] = state;
+                    const { cells } = msg.data;
+                    for (const { x, y, state } of cells) {
+                        game.map.tiles[y * game.map.width + x] = state;
+                    }
                 }
                 break;
             default: {

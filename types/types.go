@@ -1,13 +1,17 @@
 package types
 
+import "online-game/types/omath"
+
+type UserID int16
+
 type Tile uint8
 type GamePhase uint8
 
 type TeamID uint8
 
 type GameMap struct {
-	Width  int
-	Height int
+	Width  int32
+	Height int32
 	Tiles  []Tile
 }
 
@@ -30,14 +34,18 @@ type StateMessageState struct {
 
 type StateMessagePlayer struct {
 	Team TeamID
-	X    float64
-	Y    float64
-	VX   int32
-	VY   int32
+	Pos  omath.Vector2
+	Vel  omath.IVector2
 	User StateMessageUser
 }
 
 type StateMessageUser struct {
-	ID       int16
+	ID       UserID
 	Username string
+}
+
+type CellResult struct {
+	X     int32
+	Y     int32
+	State Tile
 }
