@@ -22,142 +22,14 @@ const TeamATile = 1;
 const TeamBTile = 2;
 const WallTile = 3;
 
+// Screens
+const Screens = enumJS({}, [
+    "Home",
+    "Game",
+])
+
 // use for debugging
 let one = false;
-
-function HomeScreen(root, handlers) {
-    const center = document.createElement("div");
-    center.classList.add("center", "full-height");
-
-    const container = document.createElement("div");
-    center.appendChild(container);
-
-    const h1 = document.createElement("h1");
-    h1.textContent = "Online Game";
-    container.appendChild(h1);
-
-    const roomBox = document.createElement("div");
-    roomBox.className = "row";
-    container.appendChild(roomBox);
-
-    const span = document.createElement("span");
-    span.textContent = "Room ID:";
-    roomBox.appendChild(span);
-
-    const roomInput = document.createElement("input");
-    roomInput.type = "text";
-    roomBox.appendChild(roomInput);
-
-    const joinBtn = document.createElement("button");
-    joinBtn.classList.add("btn");
-    joinBtn.textContent = "Join Room";
-    roomBox.appendChild(joinBtn);
-
-    const hostBtn = document.createElement("button");
-    hostBtn.classList.add("btn", "secondary");
-    hostBtn.textContent = "Host Room";
-    roomBox.appendChild(hostBtn);
-
-    root.replaceChildren(center);
-
-    roomInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            handlers.joinRoom(roomInput);
-        }
-    })
-
-    joinBtn.addEventListener("click", () => {
-        handlers.joinRoom(roomInput);
-    });
-
-    hostBtn.addEventListener("click", () => {
-        handlers.hostRoom();
-    });
-}
-
-function GameScreen(root, handlers) {
-    const container = document.createElement("div");
-    container.classList.add("game-container", "full-height");
-
-    const canvasContainer = document.createElement("div");
-    canvasContainer.classList.add("canvas-container", "center");
-    container.appendChild(canvasContainer);
-
-    const canvas = document.createElement("canvas");
-    canvas.id = "canvas";
-    canvas.width = 1600;
-    canvas.height = 900;
-    canvas.tabIndex = 1;
-    canvasContainer.appendChild(canvas);
-
-    const chat = document.createElement("div");
-    chat.classList.add("chat");
-    container.appendChild(chat);
-
-    const titleRow = document.createElement("div");
-    titleRow.classList.add("row", "between");
-    chat.appendChild(titleRow);
-
-    const chatTitle = document.createElement("h2");
-    chatTitle.classList.add("chat-title");
-    chatTitle.textContent = "Chat";
-    titleRow.appendChild(chatTitle);
-
-    const leaveBtn = document.createElement("button");
-    leaveBtn.classList.add("btn", "danger");
-    leaveBtn.textContent = "Leave Room";
-    titleRow.appendChild(leaveBtn);
-
-    const chatBoxContainer = document.createElement("div");
-    chatBoxContainer.classList.add("chat-box-container");
-    chat.appendChild(chatBoxContainer);
-
-    const chatBox = document.createElement("div");
-    chatBox.id = "chatBox";
-    chatBox.classList.add("chat-box");
-    chatBoxContainer.appendChild(chatBox);
-
-    const chatSend = document.createElement("div");
-    chatSend.classList.add("chat-send");
-    chat.appendChild(chatSend);
-
-    const chatInput = document.createElement("input");
-    chatInput.type = "text";
-    chatSend.appendChild(chatInput);
-
-    const chatBtn = document.createElement("button");
-    chatBtn.type = "button";
-    chatBtn.classList.add("btn");
-    chatBtn.textContent = "Send";
-    chatSend.appendChild(chatBtn);
-
-    root.replaceChildren(container);
-
-    chatInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            handlers.chat(chatInput);
-        }
-    });
-
-    chatBtn.addEventListener("click", () => {
-        handlers.chat(chatInput);
-    });
-
-    leaveBtn.addEventListener("click", () => {
-        handlers.leaveRoom();
-    });
-
-    appendSystemMessage("SYS_MSG_INFO", "Welcome to the game");
-    appendSystemMessage("SYS_MSG_SUCCESS", "Your username is " + handlers.username());
-    appendSystemMessage("SYS_MSG_INFO", "Use arrow keys to move");
-    appendSystemMessage("SYS_MSG_INFO", "Use Z to shoot");
-    appendSystemMessage("SYS_MSG_INFO", "Use T to change team");
-    appendSystemMessage("SYS_MSG_INFO", "Use Q to start the game");
-    appendSystemMessage("SYS_MSG_SUCCESS", "Have fun!");
-
-    // TODO: there should be a better way to do this
-    return canvas;
-}
 
 function appendMessage(from, message) {
     const chatBox = document.getElementById("chatBox");
@@ -656,6 +528,173 @@ class Game {
     }
 }
 
+class React {
+    active = Screens.Home;
+
+    constructor(ws) {
+        this.ws = ws;
+        this.username = "Unknown";
+
+        this.HomeScreen();
+    }
+
+    #rerender() {
+        if (this.active === Screens.Home) {
+            this.HomeScreen();
+        } else if (this.active === Screens.Game) {
+            this.GameScreen();
+        }
+    }
+
+    updateWs(ws) {
+        this.ws = ws;
+        this.#rerender();
+    }
+
+    updateUsername(username) {
+        this.username = username;
+        this.#rerender();
+    }
+
+    HomeScreen() {
+        this.active = Screens.Home;
+
+        const center = document.createElement("div");
+        center.classList.add("center", "full-height");
+
+        const container = document.createElement("div");
+        center.appendChild(container);
+
+        const h1 = document.createElement("h1");
+        h1.textContent = "Online Game";
+        container.appendChild(h1);
+
+        const roomBox = document.createElement("div");
+        roomBox.className = "row";
+        container.appendChild(roomBox);
+
+        const span = document.createElement("span");
+        span.textContent = "Room ID:";
+        roomBox.appendChild(span);
+
+        const roomInput = document.createElement("input");
+        roomInput.type = "text";
+        roomBox.appendChild(roomInput);
+
+        const joinBtn = document.createElement("button");
+        joinBtn.classList.add("btn");
+        joinBtn.textContent = "Join Room";
+        roomBox.appendChild(joinBtn);
+
+        const hostBtn = document.createElement("button");
+        hostBtn.classList.add("btn", "secondary");
+        hostBtn.textContent = "Host Room";
+        roomBox.appendChild(hostBtn);
+
+        root.replaceChildren(center);
+
+        roomInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                joinRoom(this.ws, roomInput);
+            }
+        })
+
+        joinBtn.addEventListener("click", () => {
+            joinRoom(this.ws, roomInput);
+        });
+
+        hostBtn.addEventListener("click", () => {
+            hostRoom(this.ws);
+        });
+    }
+
+    GameScreen() {
+        this.active = Screens.Game;
+
+        const container = document.createElement("div");
+        container.classList.add("game-container", "full-height");
+
+        const canvasContainer = document.createElement("div");
+        canvasContainer.classList.add("canvas-container", "center");
+        container.appendChild(canvasContainer);
+
+        const canvas = document.createElement("canvas");
+        canvas.id = "canvas";
+        canvas.width = 1600;
+        canvas.height = 900;
+        canvas.tabIndex = 1;
+        canvasContainer.appendChild(canvas);
+
+        const chatDiv = document.createElement("div");
+        chatDiv.classList.add("chat");
+        container.appendChild(chatDiv);
+
+        const titleRow = document.createElement("div");
+        titleRow.classList.add("row", "between");
+        chatDiv.appendChild(titleRow);
+
+        const chatTitle = document.createElement("h2");
+        chatTitle.classList.add("chat-title");
+        chatTitle.textContent = "Chat";
+        titleRow.appendChild(chatTitle);
+
+        const leaveBtn = document.createElement("button");
+        leaveBtn.classList.add("btn", "danger");
+        leaveBtn.textContent = "Leave Room";
+        titleRow.appendChild(leaveBtn);
+
+        const chatBoxContainer = document.createElement("div");
+        chatBoxContainer.classList.add("chat-box-container");
+        chatDiv.appendChild(chatBoxContainer);
+
+        const chatBox = document.createElement("div");
+        chatBox.id = "chatBox";
+        chatBox.classList.add("chat-box");
+        chatBoxContainer.appendChild(chatBox);
+
+        const chatSend = document.createElement("div");
+        chatSend.classList.add("chat-send");
+        chatDiv.appendChild(chatSend);
+
+        const chatInput = document.createElement("input");
+        chatInput.type = "text";
+        chatSend.appendChild(chatInput);
+
+        const chatBtn = document.createElement("button");
+        chatBtn.type = "button";
+        chatBtn.classList.add("btn");
+        chatBtn.textContent = "Send";
+        chatSend.appendChild(chatBtn);
+
+        root.replaceChildren(container);
+
+        chatInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                chat(this.ws, chatInput);
+            }
+        });
+
+        chatBtn.addEventListener("click", () => {
+            chat(this.ws, chatInput);
+        });
+
+        leaveBtn.addEventListener("click", () => {
+            leaveRoom(this.ws);
+        });
+
+        appendSystemMessage("SYS_MSG_INFO", "Welcome to the game");
+        appendSystemMessage("SYS_MSG_SUCCESS", "Your username is " + this.username);
+        appendSystemMessage("SYS_MSG_INFO", "Use arrow keys to move");
+        appendSystemMessage("SYS_MSG_INFO", "Use Z to shoot");
+        appendSystemMessage("SYS_MSG_INFO", "Use T to change team");
+        appendSystemMessage("SYS_MSG_INFO", "Use Q to start the game");
+        appendSystemMessage("SYS_MSG_SUCCESS", "Have fun!");
+
+        // TODO: there should be a better way to do this
+        return canvas;
+    }
+}
+
 class Application {
     /** @type {number?} */
     myId;
@@ -665,18 +704,14 @@ class Application {
     /** @type {Game?} */
     game;
 
-    activeScreen = 0; // 0: Home, 1: Game
     lastTimestamp = 0;
     rendering = false;
 
     constructor() {
         this.ws = new WebSocket("/ws");
         this.ws.binaryType = "arraybuffer";
+        this.react = new React(this.ws);
 
-        HomeScreen(root, {
-            joinRoom: (input) => joinRoom(this.ws, input),
-            hostRoom: () => hostRoom(this.ws),
-        });
         this.setupWSListeners();
     }
 
@@ -694,17 +729,13 @@ class Application {
                     {
                         this.myId = msg.data.id;
                         this.myUsername = msg.data.username;
+                        this.react.updateUsername(this.myUsername);
                     }
                     break;
                 case "MSG_HOSTED":
                 case "MSG_JOINED":
                     {
-                        const canvas = GameScreen(root, {
-                            leaveRoom: () => leaveRoom(ws),
-                            chat: (input) => chat(ws, input),
-                            username: () => this.myUsername,
-                        });
-                        this.activeScreen = 1;
+                        const canvas = this.react.GameScreen();
                         this.game = new Game(ws, canvas, {
                             id: this.myId,
                             username: this.myUsername,
@@ -713,10 +744,14 @@ class Application {
                     break;
                 case "MSG_STATE":
                     {
+                        if (this.react.active !== Screens.Game) {
+                            console.error("should be unreachable");
+                        }
                         if (!this.game) {
                             console.error("should be unreachable");
                             return;
                         }
+
                         this.game.onStateUpdate(msg.data);
                         if (!this.rendering) {
                             this.rendering = true;
@@ -724,10 +759,6 @@ class Application {
                                 this.lastTimestamp = timestamp;
                                 this.tick(timestamp);
                             });
-                        }
-
-                        if (this.activeScreen !== 1) {
-                            console.error("should be unreachable");
                         }
                     }
                     break;
@@ -738,10 +769,7 @@ class Application {
                     break;
                 case "MSG_LEFT":
                     {
-                        HomeScreen(root, {
-                            joinRoom,
-                            hostRoom,
-                        });
+                        this.react.HomeScreen();
                         this.game = null;
                         this.activeScreen = 0;
                     }
@@ -778,13 +806,7 @@ class Application {
         });
         ws.addEventListener("close", () => {
             console.log("Disconnected");
-            HomeScreen(
-                root,
-                {
-                    joinRoom: (input) => {},
-                    hostRoom: () => {},
-                }
-            );
+            this.react.HomeScreen();
             this.activeScreen = 0;
             this.game = null;
             this.myId = null;
@@ -803,10 +825,7 @@ class Application {
                 console.log("Reconnected");
                 this.ws = ws;
                 this.setupWSListeners();
-                HomeScreen(root, {
-                    joinRoom: (input) => joinRoom(this.ws, input),
-                    hostRoom: () => hostRoom(this.ws),
-                });
+                this.react.updateWs(ws);
                 return;
             }
         }
@@ -850,8 +869,4 @@ class Application {
     }
 }
 
-(() => {
-    new Application();
-})();
-
-
+new Application();
