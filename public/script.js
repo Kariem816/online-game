@@ -1,12 +1,4 @@
-const game = { state: null, ctx: null, map: null };
-let activeScreen = 0; // 0: Home, 1: Game
-let lastTimestamp = 0;
-let rendering = false;
-const myData = {
-    id: null,
-    username: null,
-};
-let isServerUpdated = false;
+const root = document.getElementById("root");
 
 // CONSTANTS
 const playerSpeed = 10;
@@ -30,9 +22,10 @@ const TeamATile = 1;
 const TeamBTile = 2;
 const WallTile = 3;
 
-function HomeScreen(root, handlers) {
-    activeScreen = 0;
+// use for debugging
+let one = false;
 
+function HomeScreen(root, handlers) {
     const center = document.createElement("div");
     center.classList.add("center", "full-height");
 
@@ -83,8 +76,6 @@ function HomeScreen(root, handlers) {
 }
 
 function GameScreen(root, handlers) {
-    activeScreen = 1;
-
     const container = document.createElement("div");
     container.classList.add("game-container", "full-height");
 
@@ -97,9 +88,6 @@ function GameScreen(root, handlers) {
     canvas.width = 1600;
     canvas.height = 900;
     canvas.tabIndex = 1;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Failed to get 2d context");
-    game.ctx = ctx;
     canvasContainer.appendChild(canvas);
 
     const chat = document.createElement("div");
@@ -145,8 +133,6 @@ function GameScreen(root, handlers) {
 
     root.replaceChildren(container);
 
-    handlers.setupGameControls(canvas);
-
     chatInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             handlers.chat(chatInput);
@@ -162,203 +148,15 @@ function GameScreen(root, handlers) {
     });
 
     appendSystemMessage("SYS_MSG_INFO", "Welcome to the game");
-    appendSystemMessage("SYS_MSG_SUCCESS", "Your username is " + myData.username);
+    appendSystemMessage("SYS_MSG_SUCCESS", "Your username is " + handlers.username());
     appendSystemMessage("SYS_MSG_INFO", "Use arrow keys to move");
     appendSystemMessage("SYS_MSG_INFO", "Use Z to shoot");
     appendSystemMessage("SYS_MSG_INFO", "Use T to change team");
     appendSystemMessage("SYS_MSG_INFO", "Use Q to start the game");
     appendSystemMessage("SYS_MSG_SUCCESS", "Have fun!");
-}
 
-let one = false;
-function tick(ts) {
-    if (!game.state) { console.log("no game state"); rendering = false; return; }
-    if (!game.ctx) { console.log("no game ctx"); rendering = false; return; }
-    const dt = (ts - lastTimestamp) / 1000;
-    lastTimestamp = ts;
-    const { width, height } = game.ctx.canvas;
-    const wOffset = width * 0.1;
-    const wRest = width - wOffset;
-    const hOffset = height * 0.1;
-    const hRest = height - hOffset;
-
-    const { state: gameState, ctx, map } = game;
-
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    // Update
-    if (gameState.started && !isServerUpdated) {
-        if (one) {
-            console.log(gameState);
-            one = false;
-        }
-        for (const player of gameState.players) {
-            let newX = player.x + player.vx * dt * playerSpeed;
-            let newY = player.y + player.vy * dt * playerSpeed;
-
-            const { tile, bottom, right, bottomRight } = getAroundMap(map, Math.floor(newX), Math.floor(newY));
-            const cornerX = newX - Math.floor(newX) > 0;
-            const cornerY = newY - Math.floor(newY) > 0;
-
-            if (player.vx > 0) {
-                if (right === WallTile || (cornerY && bottomRight === WallTile)) {
-                    newX = Math.floor(newX);
-                }
-            }
-
-            if (player.vx < 0) {
-                if (tile === WallTile || (cornerY && bottom === WallTile)) {
-                    newX = Math.ceil(newX);
-                }
-            }
-
-            if (player.vy > 0) {
-                if (bottom === WallTile || (cornerX && bottomRight === WallTile)) {
-                    newY = Math.floor(newY);
-                }
-            }
-
-            if (player.vy < 0) {
-                if (tile === WallTile || (cornerX && right === WallTile)) {
-                    newY = Math.ceil(newY);
-                }
-            }
-
-            player.x = newX;
-            player.y = newY;
-        }
-    } else {
-        isServerUpdated = false;
-    }
-
-    // Render
-    const teamAColor = "#" + gameState.state.teamA.toString(16).padStart(6, "0");
-    const teamBColor = "#" + gameState.state.teamB.toString(16).padStart(6, "0");
-
-    // Bars
-    ctx.fillStyle = "#353535";
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.fillStyle = "#f0f0f0";
-    ctx.font = "30px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(`Room: ${gameState.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
-
-    // Top bar
-    if (gameState.started) {
-        const started = new Date(gameState.startedAt);
-        const now = new Date();
-        const left = gameDuration - (now - started);
-        ctx.fillStyle = "#f0f0f0";
-        if (left <= 0) {
-            ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
-        } else {
-            const minutes = Math.floor(left / 1000 / 60).toString().padStart(2, "0");
-            const seconds = (Math.floor(left / 1000) % 60).toString().padStart(2, "0");
-            ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
-        }
-    } else {
-        ctx.fillStyle = "#f0f0f0";
-        ctx.fillText("01:00", width / 2, hOffset / 2);
-    }
-
-    // Sidebar
-        const sidebarCenter = hOffset + hRest / 2;
-        // score
-        const score = gameState.state.phase === GAME_PHASES.WaitingForPlayers ? "-" : `${gameState.state.scoreA} - ${gameState.state.scoreB}`;
-        ctx.fillStyle = "#f0f0f0";
-        ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
-
-        // Teams
-        const teamA = gameState.players.filter((p) => p.team === TEAM_ID.TeamA);
-        const teamB = gameState.players.filter((p) => p.team === TEAM_ID.TeamB);
-        const squareSize = wOffset - 20;
-
-        // team A
-        ctx.fillStyle = teamAColor;
-        ctx.fillRect(10, sidebarCenter - 30 - squareSize, squareSize, squareSize);
-        ctx.fillStyle = "#f0f0f0";
-        ctx.fillText(`Team A (${teamA.length})`, wOffset / 2, sidebarCenter - 55 - squareSize, wOffset - 20);
-
-        // team B
-        ctx.fillStyle = teamBColor;
-        ctx.fillRect(10, sidebarCenter + 30, squareSize, squareSize);
-        ctx.fillStyle = "#f0f0f0";
-        ctx.fillText(`Team B (${teamB.length})`, wOffset / 2, sidebarCenter + 55 + squareSize, wOffset - 20);
-
-    // Map
-    ctx.fillStyle = "#FFD35A";
-        ctx.fillRect(wOffset, hOffset, wRest, hRest);
-
-    // Render map
-    if (gameState.state.phase === GAME_PHASES.Playing) {
-        const { width: mapWidth, height: mapHeight } = map;
-        const cellWidth = Math.floor(wRest / mapWidth);
-        const mapWidthOffset = wOffset / cellWidth;
-        const cellHeight = Math.floor(hRest / mapHeight);
-        const mapHeightOffset = hOffset / cellHeight;
-
-        for (let i = 0; i < mapWidth * mapHeight; i++) {
-            const x = (i % mapWidth) + mapWidthOffset;
-            const y = Math.floor(i / mapWidth) + mapHeightOffset;
-
-            switch (map.tiles[i]) {
-                case EmptyTile: {
-                    // Empty
-                } break;
-                case TeamATile: {
-                    ctx.fillStyle = teamAColor;
-                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                } break;
-                case TeamBTile: {
-                    ctx.fillStyle = teamBColor;
-                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                } break;
-                case WallTile: {
-                    ctx.fillStyle = "#FFA823";
-                    ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                } break;
-            }
-        }
-
-        // Render players
-        for (const player of gameState.players) {
-            const x = player.x + mapWidthOffset;
-            const y = player.y + mapHeightOffset;
-            const color = player.team === 0 ? teamAColor : teamBColor;
-
-            if (player.user.id === myData.id) {
-                ctx.fillStyle = myData.id === gameState.host ? "#fcbe03" : "#ffffff";
-                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                ctx.fillStyle = color;
-                ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
-            } else if (player.user.id === gameState.host) {
-                ctx.fillStyle = "#fcbe03";
-                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                ctx.fillStyle = color;
-                ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
-            } else {
-                ctx.fillStyle = color;
-                ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-            }
-        }
-    } else {
-        ctx.fillStyle = "#353535";
-        ctx.font = "60px Arial";
-        switch (gameState.state.phase) {
-            case GAME_PHASES.WaitingForPlayers: {
-                ctx.fillText("Waiting for players", width / 2, hOffset + hRest / 2);
-            } break;
-            case GAME_PHASES.GameOver: {
-                const winner = gameState.state.scoreA > gameState.state.scoreB ? "Team A Wins"
-                    : gameState.state.scoreA === gameState.state.scoreB ? "It's a Tie" : "Team B Wins";
-                ctx.fillText(`Game Over! ${winner}`, width / 2, hOffset + hRest / 2);
-            } break;
-        }
-    }
-
-    requestAnimationFrame(tick);
+    // TODO: there should be a better way to do this
+    return canvas;
 }
 
 function appendMessage(from, message) {
@@ -378,7 +176,6 @@ function appendMessage(from, message) {
     msg.textContent = message;
     msg.classList.add("chat-text");
     chatMessage.appendChild(msg);
-
     chatBox.scrollTop = chatBox.scrollHeight;
 
     return true;
@@ -391,15 +188,6 @@ function typeToString(type) {
         case "SYS_MSG_SUCCESS": return "success";
         default: return "unknown";
     }
-}
-
-function usernameFromId(id) {
-    for (const player of game.state.players) {
-        if (player.user.id === id) {
-            return player.user.username;
-        }
-    }
-    return "Unknown";
 }
 
 function appendSystemMessage(type, message) {
@@ -421,29 +209,106 @@ function appendSystemMessage(type, message) {
     return true;
 }
 
-(() => {
-    const root = document.getElementById("root");
+function joinRoom(ws, roomInput) {
+    const room = roomInput.value;
+    const buf = encodeMsg({
+        type: "MSG_JOIN",
+        data: { room },
+    })
+    if (buf.error) {
+        alert(buf.error);
+        return;
+    }
+    ws.send(buf);
+}
 
-    let ws = new WebSocket("/ws");
-    ws.binaryType = "arraybuffer";
-    setupWSListeners(ws, {
-        joinRoom,
-        hostRoom,
-        leaveRoom,
-        startGame,
-        chat,
-        setupGameControls,
-    },
-        root
+function hostRoom(ws) {
+    ws.send(
+        encodeMsg({
+            type: "MSG_HOST",
+        })
     );
+}
 
-    function setupGameControls(canvas) {
-        canvas.addEventListener("keydown", (e) => {
+function leaveRoom(ws) {
+    ws.send(
+        encodeMsg({
+            type: "MSG_LEAVE",
+        })
+    );
+}
+
+function chat(ws, chatInput) {
+    const message = chatInput.value;
+    if (!message) return;
+    const buf = encodeMsg({
+        type: "MSG_CHAT",
+        data: { message },
+    });
+
+    if (buf.error) {
+        appendSystemMessage("SYS_MSG_ERROR", buf.error);
+        return;
+    }
+
+    ws.send(buf);
+    chatInput.value = "";
+}
+
+class GameMap {
+    constructor() {
+        this.tiles = [];
+        this.width = 0;
+        this.height = 0;
+    }
+
+    static fromMapMessage(msg) {
+        const map = new GameMap();
+        map.width = msg.width;
+        map.height = msg.height;
+        map.tiles = msg.tiles;
+        return map;
+    }
+
+    setTiles(tiles) {
+        for (const { x, y, state } of tiles) {
+            this.tiles[y * this.width + x] = state;
+        }
+    }
+
+    getTileByIndex(i) {
+        return this.tiles[i];
+    }
+
+    getAround(x, y) {
+        const tile = this.tiles[y * this.width + x];
+        const bottom = this.tiles[(y + 1) * this.width + x];
+        const right = this.tiles[y * this.width + x + 1];
+        const bottomRight = this.tiles[(y + 1) * this.width + x + 1];
+        return { tile, bottom, right, bottomRight };
+    }
+}
+
+class Game {
+    isServerUpdated = false;
+    constructor(ws, renderer, myData) {
+        this.ws = ws;
+        this.renderer = renderer;
+        this.ctx = renderer.getContext("2d"); // shouldn't fail ?!
+        this.state = {};
+        this.map = new GameMap();
+        this.myData = myData;
+
+        this.setupControls();
+    }
+
+    setupControls() {
+        this.renderer.addEventListener("keydown", (e) => {
             if (e.repeat) return;
             switch (e.code) {
                 case "ArrowUp":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -456,7 +321,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "ArrowDown":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -469,7 +334,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "ArrowLeft":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -482,7 +347,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "ArrowRight":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -495,7 +360,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "KeyQ":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_START",
                             })
@@ -504,7 +369,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "KeyZ":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_SHOOT",
                             })
@@ -513,7 +378,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "KeyT":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_TEAM",
                             })
@@ -528,12 +393,12 @@ function appendSystemMessage(type, message) {
             }
         });
 
-        canvas.addEventListener("keyup", (e) => {
+        this.renderer.addEventListener("keyup", (e) => {
             if (e.repeat) return;
             switch (e.code) {
                 case "ArrowUp":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -546,7 +411,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "ArrowDown":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -559,7 +424,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "ArrowLeft":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -572,7 +437,7 @@ function appendSystemMessage(type, message) {
                     break;
                 case "ArrowRight":
                     {
-                        ws.send(
+                        this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
                                 data: {
@@ -587,195 +452,406 @@ function appendSystemMessage(type, message) {
         });
     }
 
-    function joinRoom(roomInput) {
-        const room = roomInput.value;
-        const buf = encodeMsg({
-            type: "MSG_JOIN",
-            data: { room },
-        })
-        if (buf.error) {
-            alert(buf.error);
-            return;
+    onStateUpdate(state) {
+        this.state = state;
+        this.isServerUpdated = true;
+    }
+
+    onMapUpdate(map) {
+        this.map = GameMap.fromMapMessage(map);
+    }
+
+    onShot(cells) {
+        this.map.setTiles(cells);
+    }
+
+    update(dt) {
+        if (this.state.started && !this.isServerUpdated) {
+            if (one) {
+                console.log(gameState);
+                one = false;
+            }
+            for (const player of this.state.players) {
+                let newX = player.x + player.vx * dt * playerSpeed;
+                let newY = player.y + player.vy * dt * playerSpeed;
+
+                const { tile, bottom, right, bottomRight } = this.map.getAround(Math.floor(newX), Math.floor(newY));
+                const cornerX = newX - Math.floor(newX) > 0;
+                const cornerY = newY - Math.floor(newY) > 0;
+
+                if (player.vx > 0) {
+                    if (right === WallTile || (cornerY && bottomRight === WallTile)) {
+                        newX = Math.floor(newX);
+                    }
+                }
+
+                if (player.vx < 0) {
+                    if (tile === WallTile || (cornerY && bottom === WallTile)) {
+                        newX = Math.ceil(newX);
+                    }
+                }
+
+                if (player.vy > 0) {
+                    if (bottom === WallTile || (cornerX && bottomRight === WallTile)) {
+                        newY = Math.floor(newY);
+                    }
+                }
+
+                if (player.vy < 0) {
+                    if (tile === WallTile || (cornerX && right === WallTile)) {
+                        newY = Math.ceil(newY);
+                    }
+                }
+
+                player.x = newX;
+                player.y = newY;
+            }
+        } else {
+            this.isServerUpdated = false;
         }
-        ws.send(buf);
     }
 
-    function hostRoom() {
-        ws.send(
-            encodeMsg({
-                type: "MSG_HOST",
-            })
-        );
+    render() {
+        const { width, height } = this.renderer;
+        const wOffset = width * 0.1;
+        const wRest = width - wOffset;
+        const hOffset = height * 0.1;
+        const hRest = height - hOffset;
+        const teamAColor = "#" + this.state.state.teamA.toString(16).padStart(6, "0");
+        const teamBColor = "#" + this.state.state.teamB.toString(16).padStart(6, "0");
+
+        this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+
+        // Bars
+        this.ctx.fillStyle = "#353535";
+        this.ctx.fillRect(0, 0, width, height);
+
+        this.ctx.fillStyle = "#f0f0f0";
+        this.ctx.font = "30px Arial";
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+        this.ctx.fillText(`Room: ${this.state.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
+
+        // Top bar
+        if (this.state.started) {
+            const started = new Date(this.state.startedAt);
+            const now = new Date();
+            const left = gameDuration - (now - started);
+            this.ctx.fillStyle = "#f0f0f0";
+            if (left <= 0) {
+                this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
+            } else {
+                const minutes = Math.floor(left / 1000 / 60).toString().padStart(2, "0");
+                const seconds = (Math.floor(left / 1000) % 60).toString().padStart(2, "0");
+                this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
+            }
+        } else {
+            this.ctx.fillStyle = "#f0f0f0";
+            this.ctx.fillText("01:00", width / 2, hOffset / 2);
+        }
+
+        // Sidebar
+        const sidebarCenter = hOffset + hRest / 2;
+        // score
+        const score = this.state.state.phase === GAME_PHASES.WaitingForPlayers ? "-" : `${this.state.state.scoreA} - ${this.state.state.scoreB}`;
+        this.ctx.fillStyle = "#f0f0f0";
+        this.ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
+
+        // Teams
+        const teamA = this.state.players.filter((p) => p.team === TEAM_ID.TeamA);
+        const teamB = this.state.players.filter((p) => p.team === TEAM_ID.TeamB);
+        const squareSize = wOffset - 20;
+
+        // team A
+        this.ctx.fillStyle = teamAColor;
+        this.ctx.fillRect(10, sidebarCenter - 30 - squareSize, squareSize, squareSize);
+        this.ctx.fillStyle = "#f0f0f0";
+        this.ctx.fillText(`Team A (${teamA.length})`, wOffset / 2, sidebarCenter - 55 - squareSize, wOffset - 20);
+
+        // team B
+        this.ctx.fillStyle = teamBColor;
+        this.ctx.fillRect(10, sidebarCenter + 30, squareSize, squareSize);
+        this.ctx.fillStyle = "#f0f0f0";
+        this.ctx.fillText(`Team B (${teamB.length})`, wOffset / 2, sidebarCenter + 55 + squareSize, wOffset - 20);
+
+        // Map
+        this.ctx.fillStyle = "#FFD35A";
+        this.ctx.fillRect(wOffset, hOffset, wRest, hRest);
+
+        // Render map
+        if (this.state.state.phase === GAME_PHASES.Playing) {
+            const { width: mapWidth, height: mapHeight } = this.map;
+            const cellWidth = Math.floor(wRest / mapWidth);
+            const mapWidthOffset = wOffset / cellWidth;
+            const cellHeight = Math.floor(hRest / mapHeight);
+            const mapHeightOffset = hOffset / cellHeight;
+
+            for (let i = 0; i < mapWidth * mapHeight; i++) {
+                const x = (i % mapWidth) + mapWidthOffset;
+                const y = Math.floor(i / mapWidth) + mapHeightOffset;
+
+                switch (this.map.getTileByIndex(i)) {
+                    case EmptyTile: {
+                        // Empty
+                    } break;
+                    case TeamATile: {
+                        this.ctx.fillStyle = teamAColor;
+                        this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    } break;
+                    case TeamBTile: {
+                        this.ctx.fillStyle = teamBColor;
+                        this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    } break;
+                    case WallTile: {
+                        this.ctx.fillStyle = "#FFA823";
+                        this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    } break;
+                }
+            }
+
+            // Render players
+            for (const player of this.state.players) {
+                const x = player.x + mapWidthOffset;
+                const y = player.y + mapHeightOffset;
+                const color = player.team === 0 ? teamAColor : teamBColor;
+
+                if (player.user.id === this.myData.id) {
+                    this.ctx.fillStyle = this.myData.id === this.state.host ? "#fcbe03" : "#ffffff";
+                    this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    this.ctx.fillStyle = color;
+                    this.ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
+                } else if (player.user.id === this.state.host) {
+                    this.ctx.fillStyle = "#fcbe03";
+                    this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                    this.ctx.fillStyle = color;
+                    this.ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
+                } else {
+                    this.ctx.fillStyle = color;
+                    this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                }
+            }
+        } else {
+            this.ctx.fillStyle = "#353535";
+            this.ctx.font = "60px Arial";
+            switch (this.state.state.phase) {
+                case GAME_PHASES.WaitingForPlayers: {
+                    this.ctx.fillText("Waiting for players", width / 2, hOffset + hRest / 2);
+                } break;
+                case GAME_PHASES.GameOver: {
+                    const winner = this.state.state.scoreA > this.state.state.scoreB ? "Team A Wins"
+                        : this.state.state.scoreA === this.state.state.scoreB ? "It's a Tie" : "Team B Wins";
+                    this.ctx.fillText(`Game Over! ${winner}`, width / 2, hOffset + hRest / 2);
+                } break;
+            }
+        }
     }
 
-    function leaveRoom() {
-        ws.send(
-            encodeMsg({
-                type: "MSG_LEAVE",
-            })
-        );
+    getUsername(id) {
+        for (const player of this.state.players) {
+            if (player.user.id === id) {
+                return player.user.username;
+            }
+        }
+        return "Unknown";
+    }
+}
+
+class Application {
+    /** @type {number?} */
+    myId;
+    /** @type {string?} */
+    myUsername;
+
+    /** @type {Game?} */
+    game;
+
+    activeScreen = 0; // 0: Home, 1: Game
+    lastTimestamp = 0;
+    rendering = false;
+
+    constructor() {
+        this.ws = new WebSocket("/ws");
+        this.ws.binaryType = "arraybuffer";
+
+        HomeScreen(root, {
+            joinRoom: (input) => joinRoom(this.ws, input),
+            hostRoom: () => hostRoom(this.ws),
+        });
+        this.setupWSListeners();
     }
 
-    function startGame() {
-        rendering = true;
-        requestAnimationFrame((timestamp) => {
-            lastTimestamp = timestamp;
-            tick(timestamp);
+    setupWSListeners() {
+        const ws = this.ws;
+        const that = this;
+
+        ws.addEventListener("open", () => {
+            console.log("Connected");
+        });
+        ws.addEventListener("message", (event) => {
+            const msg = decodeMsg(event.data);
+            switch (msg.type) {
+                case "MSG_CNCT":
+                    {
+                        this.myId = msg.data.id;
+                        this.myUsername = msg.data.username;
+                    }
+                    break;
+                case "MSG_HOSTED":
+                case "MSG_JOINED":
+                    {
+                        const canvas = GameScreen(root, {
+                            leaveRoom: () => leaveRoom(ws),
+                            chat: (input) => chat(ws, input),
+                            username: () => this.myUsername,
+                        });
+                        this.activeScreen = 1;
+                        this.game = new Game(ws, canvas, {
+                            id: this.myId,
+                            username: this.myUsername,
+                        });
+                    }
+                    break;
+                case "MSG_STATE":
+                    {
+                        if (!this.game) {
+                            console.error("should be unreachable");
+                            return;
+                        }
+                        this.game.onStateUpdate(msg.data);
+                        if (!this.rendering) {
+                            this.rendering = true;
+                            requestAnimationFrame((timestamp) => {
+                                this.lastTimestamp = timestamp;
+                                this.tick(timestamp);
+                            });
+                        }
+
+                        if (this.activeScreen !== 1) {
+                            console.error("should be unreachable");
+                        }
+                    }
+                    break;
+                case "MSG_MAP":
+                    {
+                        this.game?.onMapUpdate(msg.data);
+                    }
+                    break;
+                case "MSG_LEFT":
+                    {
+                        HomeScreen(root, {
+                            joinRoom,
+                            hostRoom,
+                        });
+                        this.game = null;
+                        this.activeScreen = 0;
+                    }
+                    break;
+                case "MSG_CHATTED":
+                    {
+                        appendMessage(that.game.getUsername(msg.data.from), msg.data.message);
+                    }
+                    break;
+                case "MSG_ERROR":
+                    {
+                        if (!appendSystemMessage("SYS_MSG_ERROR", msg.data.message)) {
+                            // TODO: find a better way to display error messages
+                            alert(msg.data.message);
+                        }
+                    }
+                    break;
+                case "MSG_SYSTEM":
+                    {
+                        if (!appendSystemMessage(msg.data.type, msg.data.message)) {
+                            console.log(msg.data.type, msg.data.msg);
+                        }
+                    }
+                    break;
+                case "MSG_SHOT":
+                    {
+                        this.game?.onShot(msg.data.cells);
+                    }
+                    break;
+                default: {
+                    console.error("Unknown message type:", msg.type);
+                }
+            }
+        });
+        ws.addEventListener("close", () => {
+            console.log("Disconnected");
+            HomeScreen(
+                root,
+                {
+                    joinRoom: (input) => {},
+                    hostRoom: () => {},
+                }
+            );
+            this.activeScreen = 0;
+            this.game = null;
+            this.myId = null;
+            this.myUsername = null;
+            this.reconnect();
         });
     }
 
-    function chat(chatInput) {
-        const message = chatInput.value;
-        if (!message) return;
-        const buf = encodeMsg({
-            type: "MSG_CHAT",
-            data: { message },
-        });
+    async reconnect() {
+        console.log("Reconnecting...");
 
-        if (buf.error) {
-            appendSystemMessage("SYS_MSG_ERROR", buf.error);
-            return;
+        for (let i = 0; i < 10; i++) {
+            await sleep(1000 * i);
+            const ws = await this.actualReconnect();
+            if (ws) {
+                console.log("Reconnected");
+                this.ws = ws;
+                this.setupWSListeners();
+                HomeScreen(root, {
+                    joinRoom: (input) => joinRoom(this.ws, input),
+                    hostRoom: () => hostRoom(this.ws),
+                });
+                return;
+            }
         }
-
-        ws.send(buf);
-        chatInput.value = "";
+        console.log("Failed to reconnect");
     }
 
-    HomeScreen(root, {
-        joinRoom,
-        hostRoom,
-    });
+    async actualReconnect() {
+        const ws = new WebSocket("/ws");
+        ws.binaryType = "arraybuffer";
+        try {
+            await new Promise((res, rej) => {
+                function onError() {
+                    rej();
+                }
+                function onOpen() {
+                    ws.removeEventListener("error", onError);
+                    ws.removeEventListener("open", onOpen); // this maybe a bad idea
+                    res();
+                }
+
+
+                ws.addEventListener("error", onError);
+                ws.addEventListener("open", onOpen);
+            });
+            return ws;
+        } catch {
+            return null;
+        }
+    }
+
+    tick(ts) {
+        if (!this.game) { console.error("Game not initialized"); this.rendering = false; return; }
+        const dt = (ts - this.lastTimestamp) / 1000;
+        this.lastTimestamp = ts;
+
+        this.game.update(dt);
+        this.game.render();
+
+        const that = this;
+        requestAnimationFrame(that.tick.bind(that));
+    }
+}
+
+(() => {
+    new Application();
 })();
 
-function setupWSListeners(ws, handlers, root) {
-    const {
-        joinRoom,
-        hostRoom,
-        leaveRoom,
-        chat,
-        startGame,
-        setupGameControls,
-    } = handlers;
-    ws.addEventListener("open", () => {
-        console.log("Connected");
-    });
-    ws.addEventListener("message", (event) => {
-        const msg = decodeMsg(event.data);
-        switch (msg.type) {
-            case "MSG_CNCT":
-                {
-                    myData.id = msg.data.id;
-                    myData.username = msg.data.username;
-                }
-                break;
-            case "MSG_HOSTED":
-                {
-                    GameScreen(root, {
-                        leaveRoom,
-                        chat,
-                        setupGameControls,
-                    });
-                }
-                break;
-            case "MSG_JOINED":
-                {
-                    GameScreen(root, {
-                        leaveRoom,
-                        chat,
-                        setupGameControls,
-                    });
-                }
-                break;
-            case "MSG_STATE":
-                {
-                    if (!game.state || !rendering) {
-                        game.state = msg.data;
-                        startGame();
-                    } else {
-                        game.state = msg.data;
-                    }
-                    isServerUpdated = true;
 
-                    if (activeScreen !== 1) {
-                        console.error("should be unreachable");
-                    }
-                }
-                break;
-            case "MSG_MAP":
-                {
-                    game.map = msg.data;
-                }
-                break;
-            case "MSG_LEFT":
-                {
-                    HomeScreen(root, {
-                        joinRoom,
-                        hostRoom,
-                    });
-                    gameState = undefined;
-                }
-                break;
-            case "MSG_CHATTED":
-                {
-                    appendMessage(usernameFromId(msg.data.from), msg.data.message);
-                }
-                break;
-            case "MSG_ERROR":
-                {
-                    if (!appendSystemMessage("SYS_MSG_ERROR", msg.data.message)) {
-                        // TODO: find a better way to display error messages
-                        alert(msg.data.message);
-                    }
-                }
-                break;
-            case "MSG_SYSTEM":
-                {
-                    if (!appendSystemMessage(msg.data.type, msg.data.message)) {
-                        console.log(msg.data.type, msg.data.msg);
-                    }
-                }
-                break;
-            case "MSG_SHOT":
-                {
-                    const { cells } = msg.data;
-                    for (const { x, y, state } of cells) {
-                        game.map.tiles[y * game.map.width + x] = state;
-                    }
-                }
-                break;
-            default: {
-                console.error("Unknown message type:", msg.type);
-            }
-        }
-    });
-    ws.addEventListener("close", () => {
-        console.log("Disconnected");
-        HomeScreen(
-            root,
-            {},
-            {
-                joinRoom,
-                hostRoom,
-            }
-        );
-        game.state = undefined;
-        myData.id = undefined;
-        myData.username = undefined;
-        // TODO: reconnect
-    });
-}
-
-function getFromMap(map, x, y) {
-    if (x < 0 || y < 0 || x >= map.width || y >= map.height) {
-        return WallTile;
-    }
-    return map.tiles[y * map.width + x];
-}
-
-function getAroundMap(map, x, y) {
-    const tile = getFromMap(map, x, y);
-    const bottom = getFromMap(map, x, y + 1);
-    const right = getFromMap(map, x + 1, y);
-    const bottomRight = getFromMap(map, x + 1, y + 1);
-    return { tile, bottom, right, bottomRight };
-}

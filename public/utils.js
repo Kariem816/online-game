@@ -6,3 +6,7 @@ function enumJS(container, members) {
     }
     return container;
 }
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
