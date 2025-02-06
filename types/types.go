@@ -1,6 +1,9 @@
 package types
 
-import "online-game/types/omath"
+import (
+	"online-game/types/omath"
+	"online-game/weapons"
+)
 
 type UserID int16
 
@@ -33,10 +36,12 @@ type StateMessageState struct {
 }
 
 type StateMessagePlayer struct {
-	Team TeamID
-	Pos  omath.Vector2
-	Vel  omath.IVector2
-	User StateMessageUser
+	Team   TeamID
+	Weapon weapons.WeaponID
+	Pos    omath.Vector2
+	Vel    omath.IVector2
+	Theta  float32
+	User   StateMessageUser
 }
 
 type StateMessageUser struct {

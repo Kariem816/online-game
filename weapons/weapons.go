@@ -1,7 +1,6 @@
 package weapons
 
 import (
-	"online-game/types"
 	"online-game/types/omath"
 )
 
@@ -13,7 +12,7 @@ type Weapon interface {
 	// GetColldownLeft() time.Duration
 	// GetIsHoldable() bool
 	// Props() map[string]interface{}
-	Shoot(pos, loc omath.Vector2, gameMap types.GameMap) ([]types.CellResult, error)
+	Shoot(pos omath.Vector2, r float32, thata float32) []omath.IVector2
 	// PhantomShoot(pos, loc omath.Vector2) ([]types.CellResult, error) // doesn't fire cooldown
 }
 

@@ -238,6 +238,21 @@ func main() {
 				} else {
 					updateMap(game, cells)
 				}
+			case msgs.MSG_MOUSE:
+				if game == nil {
+					user.Error("You are not in a game")
+					continue
+				}
+				if game.State.Phase != entities.Playing {
+					continue
+				}
+
+				mm, ok := gmsg.ParseMouseMessage()
+				if !ok {
+					log.Println("[ERROR]: ParseMouseMessage", gmsg)
+				}
+
+				game.MoveMouse(id, mm.DX, mm.DY)
 			case msgs.MSG_CHAT:
 				// TODO: Add support for commands
 				if game == nil {

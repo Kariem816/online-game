@@ -46,6 +46,7 @@ func NewGame(host *User) string {
 		LC:    true,
 	}
 	Games = append(Games, game)
+	fmt.Println("New Room:", room)
 	return room
 }
 
@@ -205,7 +206,7 @@ func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
 		return []types.CellResult{}, errors.New("player not found")
 	}
 
-	attacked := player.Shoot(&g.State.GameMap)
+	attacked := player.Shoot()
 
 	if len(attacked) == 0 {
 		return []types.CellResult{}, nil
@@ -245,6 +246,13 @@ func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
 	}
 
 	return results, nil
+}
+
+func (g *Game) MoveMouse(userId types.UserID, dx, dy int32) {
+	player := g.GetPlayer(userId)
+	if player != nil {
+		player.MoveMouse(dx, dy)
+	}
 }
 
 func (g *Game) Update() {

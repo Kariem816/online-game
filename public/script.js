@@ -19,9 +19,9 @@ const TEAM_ID = enumJS({}, [
 // Tile Types
 const Tiles = enumJS({}, [
     "EmptyTile",
-	"TeamATile",
-	"TeamBTile",
-	"WallTile",
+    "TeamATile",
+    "TeamBTile",
+    "WallTile",
 ]);
 
 // Screens
@@ -169,10 +169,17 @@ class Game {
         this.ws = ws;
         this.renderer = renderer;
         this.ctx = renderer.getContext("2d"); // shouldn't fail ?!
+
+        this.mouse = { x: renderer.width / 2, y: renderer.height / 2 };
+
         this.state = {};
         this.map = new GameMap();
         this.myData = myData;
 
+        // fuck js `this`
+        this.mmcb = this.onMouseMove.bind(this);
+        this.lpcb = this.onClickLockPointer.bind(this);
+        this.cscb = this.onClickShoot.bind(this);
         this.setupControls();
     }
 
@@ -180,7 +187,7 @@ class Game {
         this.renderer.addEventListener("keydown", (e) => {
             if (e.repeat) return;
             switch (e.code) {
-                case "ArrowUp":
+                case "KeyW":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -193,7 +200,7 @@ class Game {
                         );
                     }
                     break;
-                case "ArrowDown":
+                case "KeyS":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -206,7 +213,7 @@ class Game {
                         );
                     }
                     break;
-                case "ArrowLeft":
+                case "KeyA":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -219,7 +226,7 @@ class Game {
                         );
                     }
                     break;
-                case "ArrowRight":
+                case "KeyD":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -237,15 +244,6 @@ class Game {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_START",
-                            })
-                        );
-                    }
-                    break;
-                case "KeyZ":
-                    {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_SHOOT",
                             })
                         );
                     }
@@ -270,7 +268,7 @@ class Game {
         this.renderer.addEventListener("keyup", (e) => {
             if (e.repeat) return;
             switch (e.code) {
-                case "ArrowUp":
+                case "KeyW":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -283,7 +281,7 @@ class Game {
                         );
                     }
                     break;
-                case "ArrowDown":
+                case "KeyS":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -296,7 +294,7 @@ class Game {
                         );
                     }
                     break;
-                case "ArrowLeft":
+                case "KeyA":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -309,7 +307,7 @@ class Game {
                         );
                     }
                     break;
-                case "ArrowRight":
+                case "KeyD":
                     {
                         this.ws.send(
                             encodeMsg({
@@ -324,6 +322,56 @@ class Game {
                     break;
             }
         });
+
+        const canvas = this.renderer;
+        canvas.addEventListener("click", this.lpcb);
+        document.addEventListener("pointerlockchange", this.onLockChangeAlert.bind(this), false);
+    }
+
+    async onClickLockPointer() {
+        await this.renderer.requestPointerLock();
+    }
+
+    onClickShoot() {
+        this.ws.send(
+            encodeMsg({
+                type: "MSG_SHOOT",
+            })
+        );
+    }
+
+    onMouseMove(e) {
+        this.mouse.x = clamp(this.mouse.x + e.movementX, 0, this.renderer.width);
+        this.mouse.y = clamp(this.mouse.y + e.movementY, 0, this.renderer.height);
+
+        if (this.state.started) {
+            const { x, y } = this.canvasToGameCoords(this.mouse);
+
+            this.ws.send(
+                encodeMsg({
+                    type: "MSG_MOUSE",
+                    data: { x, y },
+                })
+            );
+        }
+    }
+
+    onLockChangeAlert() {
+        if (document.pointerLockElement === this.renderer) {
+            this.renderer.addEventListener("mousemove", this.mmcb, false);
+            this.renderer.removeEventListener("click", this.lpcb);
+            this.renderer.addEventListener("click", this.cscb);
+            if (this.state.started) {
+                const myPlayer = this.getMyPlayer();
+                this.mouse = this.gameCoordsToCanvas({ x: myPlayer.x, y: myPlayer.y });
+            } else {
+                this.mouse = { x: this.renderer.width / 2, y: this.renderer.height / 2 };
+            }
+        } else {
+            this.renderer.removeEventListener("mousemove", this.mmcb, false);
+            this.renderer.addEventListener("click", this.lpcb);
+            this.renderer.removeEventListener("click", this.cscb);
+        }
     }
 
     onStateUpdate(state) {
@@ -337,6 +385,36 @@ class Game {
 
     onShot(cells) {
         this.map.setTiles(cells);
+    }
+
+    canvasToGameCoords({ x, y }) {
+        const { width, height } = this.renderer;
+        const wOffset = width * 0.1;
+        const wRest = width - wOffset;
+        const hOffset = height * 0.1;
+        const hRest = height - hOffset;
+
+        const gx = (Math.max(wOffset, x) - wOffset) * this.map.width / wRest;
+        const gy = (Math.max(hOffset, y) - hOffset) * this.map.height / hRest;
+
+        return { x: gx, y: gy };
+    }
+
+    gameCoordsToCanvas({ x, y }) {
+        const { width, height } = this.renderer;
+        const wOffset = width * 0.1;
+        const wRest = width - wOffset;
+        const hOffset = height * 0.1;
+        const hRest = height - hOffset;
+
+        const gx = (x * wRest / this.map.width) + wOffset;
+        const gy = (y * hRest / this.map.height) + hOffset;
+
+        return { x: gx, y: gy };
+    }
+
+    getMyPlayer() {
+        return this.state.players.find((p) => p.id === this.id);
     }
 
     update(dt) {
@@ -503,6 +581,16 @@ class Game {
                     this.ctx.fillStyle = color;
                     this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                 }
+
+                // render player weapon
+                DrawWeapon[player.weapon](
+                    this.ctx,
+                    color,
+                    cellWidth,
+                    cellHeight,
+                    { x: x + 0.5, y: y + 0.5 },
+                    player.theta,
+                );
             }
         } else {
             this.ctx.fillStyle = "#353535";
@@ -518,6 +606,30 @@ class Game {
                 } break;
             }
         }
+
+        this.crosshair();
+    }
+
+    crosshair() {
+        const radius = 10;
+
+        this.ctx.fillStyle = "#353535";
+        this.ctx.beginPath();
+        this.ctx.arc(this.mouse.x, this.mouse.y, radius, 0, 2 * Math.PI);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = "red";
+        this.ctx.lineWidth = 3;
+        this.ctx.moveTo(this.mouse.x - radius, this.mouse.y);
+        this.ctx.lineTo(this.mouse.x + radius, this.mouse.y);
+        this.ctx.moveTo(this.mouse.x, this.mouse.y - radius);
+        this.ctx.lineTo(this.mouse.x, this.mouse.y + radius);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = "#f0f0f0";
+        this.ctx.beginPath();
+        this.ctx.arc(this.mouse.x, this.mouse.y, radius, 0, 2 * Math.PI);
+        this.ctx.stroke();
     }
 
     getUsername(id) {
@@ -686,8 +798,8 @@ class React {
 
         appendSystemMessage("SYS_MSG_INFO", "Welcome to the game");
         appendSystemMessage("SYS_MSG_SUCCESS", "Your username is " + this.username);
-        appendSystemMessage("SYS_MSG_INFO", "Use arrow keys to move");
-        appendSystemMessage("SYS_MSG_INFO", "Use Z to shoot");
+        appendSystemMessage("SYS_MSG_INFO", "Use WASD to move");
+        appendSystemMessage("SYS_MSG_INFO", "Click to shoot");
         appendSystemMessage("SYS_MSG_INFO", "Use T to change team");
         appendSystemMessage("SYS_MSG_INFO", "Use Q to start the game");
         appendSystemMessage("SYS_MSG_SUCCESS", "Have fun!");

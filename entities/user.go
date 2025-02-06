@@ -3,6 +3,7 @@ package entities
 import (
 	"online-game/msgs"
 	"online-game/types"
+	"online-game/weapons"
 	"sync"
 
 	"github.com/gofiber/contrib/websocket"
@@ -48,8 +49,9 @@ func (u *User) Error(message string) {
 
 func (u *User) ToPlayer(team types.TeamID) *Player {
 	return &Player{
-		User: u,
-		Team: team,
+		User:   u,
+		Team:   team,
+		Weapon: weapons.NewGun(),
 	}
 }
 

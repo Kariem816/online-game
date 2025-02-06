@@ -79,6 +79,11 @@ type StateMessage struct {
 	Players   []types.StateMessagePlayer
 }
 
+type MouseMessage struct {
+	DX int32
+	DY int32
+}
+
 type SystemMessage struct {
 	Type    uint8
 	Message string
@@ -107,6 +112,7 @@ const (
 	MSG_CHATTED uint8 = iota
 	MSG_MAP     uint8 = iota
 	MSG_STATE   uint8 = iota
+	MSG_MOUSE   uint8 = iota
 	MSG_SYSTEM  uint8 = iota
 	MSG_ERROR   uint8 = iota
 	MSG_LEN     uint8 = iota
@@ -352,13 +358,33 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	for _, player := range sm.Players {
 		binary.Write(buf, binary.LittleEndian, player.User.ID)
 		binary.Write(buf, binary.LittleEndian, player.Team)
+		binary.Write(buf, binary.LittleEndian, player.Weapon)
 		player.Pos.Write(buf)
 		player.Vel.Write(buf)
+		binary.Write(buf, binary.LittleEndian, player.Theta)
 		binary.Write(buf, binary.LittleEndian, uint8(len(player.User.Username)))
 		buf.WriteString(player.User.Username)
 	}
 
 	return buf, true
+}
+
+func (gm GenericMessage) ParseMouseMessage() (MouseMessage, bool) {
+	if gm.Type != MSG_MOUSE {
+		return MouseMessage{}, false
+	}
+
+	if len(gm.Args) != 8 {
+		return MouseMessage{}, false
+	}
+
+	mm := MouseMessage{}
+
+	reader := bytes.NewReader(gm.Args)
+	binary.Read(reader, binary.LittleEndian, &mm.DX)
+	binary.Read(reader, binary.LittleEndian, &mm.DY)
+
+	return mm, true
 }
 
 func (sm SystemMessage) Buffer() (*bytes.Buffer, bool) {

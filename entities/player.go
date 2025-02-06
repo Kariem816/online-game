@@ -4,6 +4,7 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
+	"online-game/weapons"
 
 	"github.com/chewxy/math32"
 )
@@ -14,11 +15,14 @@ const (
 )
 
 type Player struct {
-	User *User
-	Team types.TeamID
-	// Weapon weapons.Weapon
-	Pos omath.Vector2
-	Vel omath.IVector2
+	User   *User
+	Team   types.TeamID
+	Weapon weapons.Weapon
+	Pos    omath.Vector2
+	Vel    omath.IVector2
+	// for some god only knows reason, this contains r,theta of the mouse diff from player pos, see MoveMouse(x, y) for more
+	// consider changing the ds to reflect this
+	Mouse omath.Vector2
 }
 type Players []*Player
 
@@ -33,9 +37,11 @@ func (p Players) Foo() []types.StateMessagePlayer {
 
 func (p *Player) ToStateMessagePlayer() types.StateMessagePlayer {
 	return types.StateMessagePlayer{
-		Team: p.Team,
-		Pos:  p.Pos,
-		Vel:  p.Vel,
+		Team:   p.Team,
+		Weapon: p.Weapon.ID(),
+		Pos:    p.Pos,
+		Vel:    p.Vel,
+		Theta:  p.Mouse.Y,
 		User: types.StateMessageUser{
 			ID:       p.User.ID,
 			Username: p.User.Username,
@@ -70,6 +76,14 @@ func (p *Player) Move(direction string, start bool) {
 	// Clamp the direction
 	p.Vel.X = int32(math32.Min(math32.Max(float32(p.Vel.X), -1), 1))
 	p.Vel.Y = int32(math32.Min(math32.Max(float32(p.Vel.Y), -1), 1))
+}
+
+func (p *Player) MoveMouse(x, y int32) {
+	dx := float32(x) - p.Pos.X
+	dy := float32(y) - p.Pos.Y
+
+	p.Mouse.X = math32.Sqrt(dx*dx + dy*dy)
+	p.Mouse.Y = math32.Atan2(dy, dx)
 }
 
 func (p *Player) Update(gameMap *types.GameMap) {
@@ -109,10 +123,8 @@ func (p *Player) Update(gameMap *types.GameMap) {
 	p.Pos.Y = newY
 }
 
-func (p *Player) Shoot(m *types.GameMap) []omath.IVector2 {
-	x := int32(p.Pos.X + 0.5)
-	y := int32(p.Pos.Y + 0.5)
-	return []omath.IVector2{{X: x, Y: y}}
+func (p *Player) Shoot() []omath.IVector2 {
+	return p.Weapon.Shoot(p.Pos, p.Mouse.X, p.Mouse.Y)
 }
 
 func (p *Player) Reset() {

@@ -1,26 +1,27 @@
 // messages
 const MESSAGES = enumJS({}, [
     "MSG_CNCT",
-	"MSG_HOST",
-	"MSG_HOSTED",
-	"MSG_JOIN",
-	"MSG_JOINED",
-	"MSG_LEAVE",
-	"MSG_LEFT",
-	"MSG_START",
-	"MSG_STARTED",
-	"MSG_TEAM",
-	"MSG_TEAMED",
-	"MSG_MOVE",
-	"MSG_MOVED",
-	"MSG_SHOOT",
-	"MSG_SHOT",
-	"MSG_CHAT",
-	"MSG_CHATTED",
-	"MSG_MAP",
-	"MSG_STATE",
-	"MSG_SYSTEM",
-	"MSG_ERROR",
+    "MSG_HOST",
+    "MSG_HOSTED",
+    "MSG_JOIN",
+    "MSG_JOINED",
+    "MSG_LEAVE",
+    "MSG_LEFT",
+    "MSG_START",
+    "MSG_STARTED",
+    "MSG_TEAM",
+    "MSG_TEAMED",
+    "MSG_MOVE",
+    "MSG_MOVED",
+    "MSG_SHOOT",
+    "MSG_SHOT",
+    "MSG_CHAT",
+    "MSG_CHATTED",
+    "MSG_MAP",
+    "MSG_STATE",
+    "MSG_MOUSE",
+    "MSG_SYSTEM",
+    "MSG_ERROR",
 ]);
 
 // system messages
@@ -143,10 +144,12 @@ function decodeMsg(msg) {
                         id: getInt16(view, state),
                     },
                     team: getUint8(view, state),
+                    weapon: getUint8(view, state),
                     x: getFloat32(view, state),
                     y: getFloat32(view, state),
                     vx: getInt32(view, state),
                     vy: getInt32(view, state),
+                    theta: getFloat32(view, state),
                 });
                 const usernameLen = getUint8(view, state);
                 data.players[i].user.username = getString(view, usernameLen, state);
@@ -176,6 +179,7 @@ function decodeMsg(msg) {
         case "MSG_MOVE":
         case "MSG_SHOOT":
         case "MSG_CHAT":
+        case "MSG_MOUSE":
             throw new Error("Not Recivable " + MESSAGES[type]);
     }
 
@@ -259,6 +263,15 @@ function encodeMsg(msg) {
             buf[1] = sz;
             const msgBuf = new TextEncoder("utf-8").encode(msg.data.message);
             buf.set(msgBuf, 2);
+            break;
+        case "MSG_MOUSE":
+            const { x, y } = msg.data;
+
+            buf = new ArrayBuffer(9);
+            const view = new DataView(buf)
+            view.setUint8(0, type);
+            view.setInt32(1, x, true);
+            view.setInt32(5, y, true);
             break;
     }
 

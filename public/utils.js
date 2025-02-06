@@ -10,3 +10,7 @@ function enumJS(container, members) {
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+function clamp(val, b, t) {
+    return Math.min(t, Math.max(val, b));
+}
