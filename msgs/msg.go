@@ -156,16 +156,16 @@ func (cm ConnectedMessage) Buffer() (*bytes.Buffer, bool) {
 	return buf, true
 }
 
-func (gm GenericMessage) ParseHostMessage() (HostMessage, bool) {
+func (hm *HostMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_HOST {
-		return HostMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) > 0 {
-		return HostMessage{}, false
+		return false
 	}
 
-	return HostMessage{}, true
+	return true
 }
 
 func (hm HostedMessage) Buffer() (*bytes.Buffer, bool) {
@@ -176,16 +176,17 @@ func (hm HostedMessage) Buffer() (*bytes.Buffer, bool) {
 	return buf, true
 }
 
-func (gm GenericMessage) ParseJoinMessage() (JoinMessage, bool) {
+func (jm *JoinMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_JOIN {
-		return JoinMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) != 4 {
-		return JoinMessage{}, false
+		return false
 	}
 
-	return JoinMessage{Room: string(gm.Args)}, true
+	jm.Room = string(gm.Args)
+	return true
 }
 
 func (jm JoinedMessage) Buffer() (*bytes.Buffer, bool) {
@@ -196,16 +197,16 @@ func (jm JoinedMessage) Buffer() (*bytes.Buffer, bool) {
 	return buf, true
 }
 
-func (gm GenericMessage) ParseLeaveMessage() (LeaveMessage, bool) {
+func (lm *LeaveMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_LEAVE {
-		return LeaveMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) > 0 {
-		return LeaveMessage{}, false
+		return false
 	}
 
-	return LeaveMessage{}, true
+	return true
 }
 
 func (lm LeftMessage) Buffer() (*bytes.Buffer, bool) {
@@ -215,72 +216,72 @@ func (lm LeftMessage) Buffer() (*bytes.Buffer, bool) {
 	return buf, true
 }
 
-func (gm GenericMessage) ParseStartMessage() (StartMessage, bool) {
+func (sm *StartMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_START {
-		return StartMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) > 0 {
-		return StartMessage{}, false
+		return false
 	}
 
-	return StartMessage{}, true
+	return true
 }
 
 // func (sm StartedMessage) Buffer() (*bytes.Buffer, bool) {
 
 // }
 
-func (gm GenericMessage) ParseTeamMessage() (TeamMessage, bool) {
+func (tm *TeamMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_TEAM {
-		return TeamMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) > 0 {
-		return TeamMessage{}, false
+		return false
 	}
 
-	return TeamMessage{}, true
+	return true
 }
 
 // func (tm TeamedMessage) Buffer() (*bytes.Buffer, bool) {
 
 // }
 
-func (gm GenericMessage) ParseMoveMessage() (MoveMessage, bool) {
+func (mm *MoveMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_MOVE {
-		return MoveMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) != 1 {
-		return MoveMessage{}, false
+		return false
 	}
 
 	flags := gm.Args[0]
 
-	return MoveMessage{
-		Up:    (flags & (1 << 0)) > 0,
-		Down:  (flags & (1 << 1)) > 0,
-		Left:  (flags & (1 << 2)) > 0,
-		Right: (flags & (1 << 3)) > 0,
-		Start: (flags & (1 << 4)) > 0,
-	}, true
+	mm.Up = (flags & (1 << 0)) > 0
+	mm.Down = (flags & (1 << 1)) > 0
+	mm.Left = (flags & (1 << 2)) > 0
+	mm.Right = (flags & (1 << 3)) > 0
+	mm.Start = (flags & (1 << 4)) > 0
+
+	return true
 }
 
 // func (mm MovedMessage) Buffer() (*bytes.Buffer, bool) {
 
 // }
 
-func (gm GenericMessage) ParseShootMessage() (ShootMessage, bool) {
+func (sm *ShootMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_SHOOT {
-		return ShootMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) > 0 {
-		return ShootMessage{}, false
+		return false
 	}
 
-	return ShootMessage{}, true
+	return true
 }
 
 func (sm ShotMessage) Buffer() (*bytes.Buffer, bool) {
@@ -301,19 +302,20 @@ func (sm ShotMessage) Buffer() (*bytes.Buffer, bool) {
 	return buf, true
 }
 
-func (gm GenericMessage) ParseChatMessage() (ChatMessage, bool) {
+func (cm *ChatMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_CHAT {
-		return ChatMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) < 2 || len(gm.Args) > 256 {
-		return ChatMessage{}, false
+		return false
 	}
 
 	sz := gm.Args[0]
 	str := string(gm.Args[1 : sz+1])
+	cm.Message = str
 
-	return ChatMessage{Message: str}, true
+	return true
 }
 
 func (cm ChattedMessage) Buffer() (*bytes.Buffer, bool) {
@@ -369,22 +371,20 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	return buf, true
 }
 
-func (gm GenericMessage) ParseMouseMessage() (MouseMessage, bool) {
+func (mm *MouseMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_MOUSE {
-		return MouseMessage{}, false
+		return false
 	}
 
 	if len(gm.Args) != 8 {
-		return MouseMessage{}, false
+		return false
 	}
-
-	mm := MouseMessage{}
 
 	reader := bytes.NewReader(gm.Args)
 	binary.Read(reader, binary.LittleEndian, &mm.DX)
 	binary.Read(reader, binary.LittleEndian, &mm.DY)
 
-	return mm, true
+	return true
 }
 
 func (sm SystemMessage) Buffer() (*bytes.Buffer, bool) {

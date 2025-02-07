@@ -249,6 +249,9 @@ func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
 }
 
 func (g *Game) MoveMouse(userId types.UserID, dx, dy int32) {
+	if g.State.Phase != Playing {
+		return
+	}
 	player := g.GetPlayer(userId)
 	if player != nil {
 		player.MoveMouse(dx, dy)

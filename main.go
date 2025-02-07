@@ -112,7 +112,8 @@ func main() {
 
 			switch gmsg.Type {
 			case msgs.MSG_HOST:
-				_, ok := gmsg.ParseHostMessage()
+				hm := msgs.HostMessage{}
+				ok := hm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseHostMessage", gmsg)
 					break
@@ -130,7 +131,8 @@ func main() {
 					continue
 				}
 
-				jm, ok := gmsg.ParseJoinMessage()
+				jm := msgs.JoinMessage{}
+				ok := jm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseJoinedMessage", gmsg)
 					break
@@ -150,7 +152,8 @@ func main() {
 					}
 				}
 			case msgs.MSG_LEAVE:
-				_, ok := gmsg.ParseLeaveMessage()
+				lm := msgs.LeaveMessage{}
+				ok := lm.Parse(gmsg)
 				if !ok {
 					log.Fatal("Unreachable: binarize left message")
 				}
@@ -163,7 +166,8 @@ func main() {
 					continue
 				}
 
-				_, ok := gmsg.ParseStartMessage()
+				sm := msgs.StartMessage{}
+				ok := sm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseStartMessage", gmsg)
 				}
@@ -178,7 +182,8 @@ func main() {
 					continue
 				}
 
-				_, ok := gmsg.ParseTeamMessage()
+				tm := msgs.TeamMessage{}
+				ok := tm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseTeamMessage", gmsg)
 				}
@@ -197,7 +202,8 @@ func main() {
 					continue
 				}
 
-				mm, ok := gmsg.ParseMoveMessage()
+				mm := msgs.MoveMessage{}
+				ok := mm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseMoveMessage", gmsg)
 				}
@@ -227,7 +233,8 @@ func main() {
 					continue
 				}
 
-				_, ok := gmsg.ParseShootMessage()
+				sm := msgs.ShootMessage{}
+				ok := sm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseShootMessage", gmsg)
 				}
@@ -247,7 +254,8 @@ func main() {
 					continue
 				}
 
-				mm, ok := gmsg.ParseMouseMessage()
+				mm := msgs.MouseMessage{}
+				ok := mm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseMouseMessage", gmsg)
 				}
@@ -260,7 +268,8 @@ func main() {
 					continue
 				}
 
-				cm, ok := gmsg.ParseChatMessage()
+				cm := msgs.ChatMessage{}
+				ok := cm.Parse(gmsg)
 				if !ok {
 					log.Println("[ERROR]: ParseChatMessage", gmsg)
 				}
