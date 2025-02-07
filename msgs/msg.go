@@ -151,6 +151,7 @@ func (cm ConnectedMessage) Buffer() (*bytes.Buffer, bool) {
 	buf.WriteByte(MSG_CNCT)
 	// binary.Write(buf, binary.LittleEndian, cm)
 	binary.Write(buf, binary.LittleEndian, cm.ID)
+	buf.WriteByte(uint8(len(cm.Username)))
 	buf.WriteString(cm.Username)
 
 	return buf, true

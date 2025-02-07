@@ -84,8 +84,9 @@ function decodeMsg(msg) {
 
     switch (MESSAGES[type]) {
         case "MSG_CNCT":
-            data.id = view.getInt16(0, true);
-            data.username = new TextDecoder("utf-8").decode(msg.slice(3));
+            data.id = getInt16(view, state);
+            const usernameLen = getUint8(view, state);
+            data.username = getString(view, usernameLen, state);
             break;
         case "MSG_HOSTED":
             data.room = new TextDecoder("utf-8").decode(msg.slice(1));
