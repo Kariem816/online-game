@@ -152,6 +152,10 @@ func main() {
 					}
 				}
 			case msgs.MSG_LEAVE:
+				if game == nil {
+					user.Error("You are not in a game")
+					continue
+				}
 				lm := msgs.LeaveMessage{}
 				ok := lm.Parse(gmsg)
 				if !ok {

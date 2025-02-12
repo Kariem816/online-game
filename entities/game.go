@@ -103,6 +103,9 @@ func (g *Game) RemovePlayer(userId types.UserID) {
 		g.Terminate()
 	} else if len(g.Players) < 2 {
 		g.State.Phase = WaitingForPlayers
+		g.Started = false
+		g.State.ScoreA = 0
+		g.State.ScoreB = 0
 		Clear(&g.State.GameMap)
 		if g.Host == userId {
 			g.Host = g.Players[0].User.ID
