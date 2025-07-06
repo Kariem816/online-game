@@ -187,8 +187,7 @@ class Game {
         this.renderer.addEventListener("keydown", (e) => {
             if (e.repeat) return;
             switch (e.code) {
-                case "KeyW":
-                    {
+                case "KeyW": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -198,10 +197,8 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyS":
-                    {
+                } break;
+                case "KeyS": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -211,10 +208,8 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyA":
-                    {
+                } break;
+                case "KeyA": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -224,10 +219,8 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyD":
-                    {
+                } break;
+                case "KeyD": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -237,39 +230,31 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyQ":
-                    {
+                } break;
+                case "KeyQ": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_START",
                             })
                         );
-                    }
-                    break;
-                case "KeyT":
-                    {
+                } break;
+                case "KeyT": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_TEAM",
                             })
                         );
-                    }
-                    break;
-                case "KeyR":
-                    {
+                } break;
+                case "KeyR": {
                         one = true;
-                    }
-                    break;
+                } break;
             }
         });
 
         this.renderer.addEventListener("keyup", (e) => {
             if (e.repeat) return;
             switch (e.code) {
-                case "KeyW":
-                    {
+                case "KeyW": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -279,10 +264,8 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyS":
-                    {
+                } break;
+                case "KeyS": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -292,10 +275,8 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyA":
-                    {
+                } break;
+                case "KeyA": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -305,10 +286,8 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
-                case "KeyD":
-                    {
+                } break;
+                case "KeyD": {
                         this.ws.send(
                             encodeMsg({
                                 type: "MSG_MOVE",
@@ -318,8 +297,7 @@ class Game {
                                 },
                             })
                         );
-                    }
-                    break;
+                } break;
             }
         });
 
@@ -567,19 +545,60 @@ class Game {
                 const y = player.y + mapHeightOffset;
                 const color = player.team === 0 ? teamAColor : teamBColor;
 
-                if (player.user.id === this.myData.id) {
-                    this.ctx.fillStyle = this.myData.id === this.state.host ? "#fcbe03" : "#ffffff";
-                    this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    this.ctx.fillStyle = color;
-                    this.ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
-                } else if (player.user.id === this.state.host) {
-                    this.ctx.fillStyle = "#fcbe03";
-                    this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    this.ctx.fillStyle = color;
-                    this.ctx.fillRect((x + 0.1) * cellWidth, (y + 0.1) * cellHeight, 0.8 * cellWidth, 0.8 * cellHeight);
-                } else {
-                    this.ctx.fillStyle = color;
-                    this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                const ringColor = player.user.id === this.state.host ?
+                    "#fcbe03" : "#ffffff";
+                const withRing = player.user.id === this.state.host || player.user.id === this.myData.id;
+
+                // ring
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                if (withRing) {
+                    this.ctx.strokeStyle = ringColor;
+                    this.ctx.lineWidth = 0.2 * cellWidth; // TODO: this will cause issues if cellWidth !== cellHeight
+                    this.ctx.beginPath();
+                    this.ctx.moveTo((x + 0.1) * cellWidth, (y + 0.1) * cellHeight);
+                    this.ctx.lineTo((x + 0.9) * cellWidth, (y + 0.1) * cellHeight);
+                    this.ctx.lineTo((x + 0.9) * cellWidth, (y + 0.9) * cellHeight);
+                    this.ctx.lineTo((x + 0.1) * cellWidth, (y + 0.9) * cellHeight);
+                    this.ctx.closePath();
+                    this.ctx.stroke();
+                }
+
+                // cooldown
+                if (player.cooldown > 0) {
+                    this.ctx.strokeStyle = "tomato";
+                    this.ctx.lineWidth = 0.2 * cellWidth; // TODO: this will cause issues if cellWidth !== cellHeight
+                    this.ctx.beginPath();
+
+                    let progress = 0;
+                    if (player.cooldown <= 100 && player.cooldown > 75) {
+                        progress = 0.8 * (player.cooldown - 75) / 25; // 0.8 because the the full line has a length of 0.8
+                        this.ctx.moveTo((x + 0.9 - progress) * cellWidth, (y + 0.1) * cellHeight);
+                        this.ctx.lineTo((x + 0.9) * cellWidth, (y + 0.1) * cellHeight);
+                        this.ctx.lineTo((x + 0.9) * cellWidth, (y + 0.9) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, (y + 0.9) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, y * cellHeight);
+                    }
+                    if (player.cooldown <= 75 && player.cooldown > 50) {
+                        progress = 0.8 * (player.cooldown - 50) / 25;
+                        this.ctx.moveTo((x + 0.9) * cellWidth, (y + 0.9 - progress) * cellHeight);
+                        this.ctx.lineTo((x + 0.9) * cellWidth, (y + 0.9) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, (y + 0.9) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, y * cellHeight);
+                    }
+                    if (player.cooldown <= 50 && player.cooldown > 25) {
+                        progress = 0.8 * (player.cooldown - 25) / 25;
+                        this.ctx.moveTo((x + 0.1 + progress) * cellWidth, (y + 0.9) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, (y + 0.9) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, y * cellHeight);
+                    }
+                    if (player.cooldown <= 25) {
+                        progress = 0.8 * player.cooldown / 25;
+                        this.ctx.moveTo((x + 0.1) * cellWidth, (y + 0.1 + progress) * cellHeight);
+                        this.ctx.lineTo((x + 0.1) * cellWidth, y * cellHeight);
+                    }
+
+                    this.ctx.stroke();
                 }
 
                 // render player weapon
@@ -839,25 +858,20 @@ class Application {
         ws.addEventListener("message", (event) => {
             const msg = decodeMsg(event.data);
             switch (msg.type) {
-                case "MSG_CNCT":
-                    {
+                case "MSG_CNCT": {
                         this.myId = msg.data.id;
                         this.myUsername = msg.data.username;
                         this.react.updateUsername(this.myUsername);
-                    }
-                    break;
+                } break;
                 case "MSG_HOSTED":
-                case "MSG_JOINED":
-                    {
+                case "MSG_JOINED": {
                         const canvas = this.react.GameScreen();
                         this.game = new Game(ws, canvas, {
                             id: this.myId,
                             username: this.myUsername,
                         });
-                    }
-                    break;
-                case "MSG_STATE":
-                    {
+                } break;
+                case "MSG_STATE": {
                         if (this.react.active !== Screens.Game) {
                             console.error("should be unreachable");
                         }
@@ -874,45 +888,32 @@ class Application {
                                 this.tick(timestamp);
                             });
                         }
-                    }
-                    break;
-                case "MSG_MAP":
-                    {
+                } break;
+                case "MSG_MAP": {
                         this.game?.onMapUpdate(msg.data);
-                    }
-                    break;
-                case "MSG_LEFT":
-                    {
+                } break;
+                case "MSG_LEFT": {
                         this.react.HomeScreen();
                         this.game = null;
                         this.activeScreen = 0;
-                    }
-                    break;
-                case "MSG_CHATTED":
-                    {
+                } break;
+                case "MSG_CHATTED": {
                         appendMessage(that.game.getUsername(msg.data.from), msg.data.message);
-                    }
-                    break;
-                case "MSG_ERROR":
-                    {
+                } break;
+                case "MSG_ERROR": {
                         if (!appendSystemMessage("SYS_MSG_ERROR", msg.data.message)) {
                             // TODO: find a better way to display error messages
                             alert(msg.data.message);
                         }
-                    }
-                    break;
-                case "MSG_SYSTEM":
-                    {
+                } break;
+                case "MSG_SYSTEM": {
                         if (!appendSystemMessage(msg.data.type, msg.data.message)) {
                             console.log(msg.data.type, msg.data.msg);
                         }
-                    }
-                    break;
-                case "MSG_SHOT":
-                    {
+                } break;
+                case "MSG_SHOT": {
                         this.game?.onShot(msg.data.cells);
-                    }
-                    break;
+                } break;
                 default: {
                     console.error("Unknown message type:", msg.type);
                 }

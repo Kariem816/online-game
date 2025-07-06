@@ -151,6 +151,7 @@ function decodeMsg(msg) {
                     vx: getInt32(view, state),
                     vy: getInt32(view, state),
                     theta: getFloat32(view, state),
+                    cooldown: getUint8(view, state),
                 });
                 const usernameLen = getUint8(view, state);
                 data.players[i].user.username = getString(view, usernameLen, state);
