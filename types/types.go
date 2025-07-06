@@ -36,12 +36,13 @@ type StateMessageState struct {
 }
 
 type StateMessagePlayer struct {
-	Team   TeamID
-	Weapon weapons.WeaponID
-	Pos    omath.Vector2
-	Vel    omath.IVector2
-	Theta  float32
-	User   StateMessageUser
+	Team     TeamID
+	Weapon   weapons.WeaponID
+	Pos      omath.Vector2
+	Vel      omath.IVector2
+	Theta    float32
+	Cooldown uint8
+	User     StateMessageUser
 }
 
 type StateMessageUser struct {

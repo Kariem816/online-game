@@ -209,6 +209,9 @@ func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
 		return []types.CellResult{}, errors.New("player not found")
 	}
 
+	if player.Weapon.CooldownLeft() > 0 {
+		return []types.CellResult{}, nil
+	}
 	attacked := player.Shoot()
 
 	if len(attacked) == 0 {

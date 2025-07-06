@@ -1,15 +1,18 @@
 package weapons
 
 import (
+	"time"
+
 	"online-game/types/omath"
 )
 
 type Weapon interface {
 	ID() WeaponID
-	// Name() string
-	// Update(dt float64)
+	Name() string
+	Update()
 	// GetIsCooldown() bool
-	// GetColldownLeft() time.Duration
+	Cooldown() time.Duration
+	CooldownLeft() time.Duration
 	// GetIsHoldable() bool
 	// Props() map[string]interface{}
 	Shoot(pos omath.Vector2, r float32, thata float32) []omath.IVector2
@@ -17,7 +20,8 @@ type Weapon interface {
 }
 
 type BaseWeapon struct {
-	// cooldown    time.Duration // TODO: figure if it will be defined in terms of ticks or abs time
+	id WeaponID
+	cooldown    time.Duration
 	// holdable    bool
 	// activated   bool
 	// activatedAt time.Time
@@ -27,4 +31,6 @@ type WeaponID uint8
 
 const (
 	WEAPON_GUN WeaponID = iota
+	WEAPON_BOMB = iota
 )
+

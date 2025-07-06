@@ -81,6 +81,7 @@ type StateMessage struct {
 
 type MouseMessage struct {
 	DX int32
+
 	DY int32
 }
 
@@ -365,6 +366,7 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 		player.Pos.Write(buf)
 		player.Vel.Write(buf)
 		binary.Write(buf, binary.LittleEndian, player.Theta)
+		binary.Write(buf, binary.LittleEndian, player.Cooldown)
 		binary.Write(buf, binary.LittleEndian, uint8(len(player.User.Username)))
 		buf.WriteString(player.User.Username)
 	}

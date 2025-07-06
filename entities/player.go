@@ -42,6 +42,7 @@ func (p *Player) ToStateMessagePlayer() types.StateMessagePlayer {
 		Pos:    p.Pos,
 		Vel:    p.Vel,
 		Theta:  p.Mouse.Y,
+		Cooldown: p.Cooldown(),
 		User: types.StateMessageUser{
 			ID:       p.User.ID,
 			Username: p.User.Username,
@@ -121,6 +122,8 @@ func (p *Player) Update(gameMap *types.GameMap) {
 
 	p.Pos.X = newX
 	p.Pos.Y = newY
+
+	p.Weapon.Update()
 }
 
 func (p *Player) Shoot() []omath.IVector2 {
@@ -131,3 +134,8 @@ func (p *Player) Reset() {
 	p.Vel.X = 0
 	p.Vel.Y = 0
 }
+
+func (p *Player) Cooldown() uint8 {
+	return uint8(p.Weapon.CooldownLeft() * 100 / p.Weapon.Cooldown())
+}
+
