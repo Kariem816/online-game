@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"math/rand"
@@ -62,11 +63,15 @@ func updateMap(game *entities.Game, cells []types.CellResult) {
 	}
 }
 
+//go:embed public/*
+var publicDir embed.FS
+
 func main() {
 	app := fiber.New()
 
 	app.Use(filesystem.New(filesystem.Config{
-		Root: http.Dir("./public"),
+		Root:       http.FS(&publicDir),
+		PathPrefix: "/public",
 	}))
 
 	go func() {
