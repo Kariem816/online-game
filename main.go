@@ -163,7 +163,6 @@ func main() {
 				}
 				game.RemovePlayer(id)
 				user.SendMessage(msgs.LeftMessage{})
-				game.BroadcastSystem(msgs.SYS_MSG_INFO, fmt.Sprintf("%s left the game", user.Username))
 			case msgs.MSG_START:
 				if game == nil {
 					user.Error("You are not in a game")

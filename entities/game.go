@@ -93,8 +93,9 @@ func (g *Game) AddUser(user *User) error {
 }
 
 func (g *Game) RemovePlayer(userId types.UserID) {
+	player := g.GetPlayer(userId)
 	for i, p := range g.Players {
-		if p.User.ID == userId {
+		if p == player {
 			g.Players = append(g.Players[:i], g.Players[i+1:]...)
 			break
 		}
@@ -110,6 +111,7 @@ func (g *Game) RemovePlayer(userId types.UserID) {
 		if g.Host == userId {
 			g.Host = g.Players[0].User.ID
 		}
+		g.BroadcastSystem(msgs.SYS_MSG_INFO, fmt.Sprintf("%s left the game", player.User.Username))
 	}
 	g.LC = true
 }
