@@ -48,16 +48,10 @@ func (u *User) Error(message string) {
 }
 
 func (u *User) ToPlayer(team types.TeamID) *Player {
-	var w weapons.Weapon
-	if true {
-		w = weapons.NewBomb()
-	} else {
-		w = weapons.NewGun()
-	}
 	return &Player{
 		User:   u,
 		Team:   team,
-		Weapon: w,
+		Weapon: weapons.NewGun(),
 	}
 }
 

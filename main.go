@@ -201,6 +201,24 @@ func main() {
 					user.Error(err.Error())
 				}
 				game.BroadcastSystem(msgs.SYS_MSG_INFO, fmt.Sprintf("%s switched teams", user.Username))
+			case msgs.MSG_WEAPON:
+				if game == nil {
+					user.Error("You are not in a game")
+					continue
+				}
+
+				wm := msgs.WeaponMessage{}
+				ok := wm.Parse(gmsg)
+				if !ok {
+					log.Println("[ERROR]: ParseWeaponMessage", gmsg)
+				}
+
+				player := game.GetPlayer(id)
+				if player == nil {
+					user.Error("You are not in a game")
+				}
+
+				player.ChangeWeapon(wm.Weapon)
 			case msgs.MSG_MOVE:
 				if game == nil {
 					user.Error("You are not in a game")

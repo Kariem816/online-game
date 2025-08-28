@@ -20,8 +20,8 @@ type Weapon interface {
 }
 
 type BaseWeapon struct {
-	id WeaponID
-	cooldown    time.Duration
+	id       WeaponID
+	cooldown time.Duration
 	// holdable    bool
 	// activated   bool
 	// activatedAt time.Time
@@ -30,7 +30,7 @@ type BaseWeapon struct {
 type WeaponID uint8
 
 const (
-	WEAPON_GUN WeaponID = iota
-	WEAPON_BOMB = iota
+	WEAPON_GUN   WeaponID = iota
+	WEAPON_BOMB           = iota
+	WEAPON_COUNT          = iota
 )
-

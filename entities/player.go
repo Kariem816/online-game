@@ -37,11 +37,11 @@ func (p Players) Foo() []types.StateMessagePlayer {
 
 func (p *Player) ToStateMessagePlayer() types.StateMessagePlayer {
 	return types.StateMessagePlayer{
-		Team:   p.Team,
-		Weapon: p.Weapon.ID(),
-		Pos:    p.Pos,
-		Vel:    p.Vel,
-		Theta:  p.Mouse.Y,
+		Team:     p.Team,
+		Weapon:   p.Weapon.ID(),
+		Pos:      p.Pos,
+		Vel:      p.Vel,
+		Theta:    p.Mouse.Y,
 		Cooldown: p.Cooldown(),
 		User: types.StateMessageUser{
 			ID:       p.User.ID,
@@ -139,3 +139,11 @@ func (p *Player) Cooldown() uint8 {
 	return uint8(p.Weapon.CooldownLeft() * 100 / p.Weapon.Cooldown())
 }
 
+func (p *Player) ChangeWeapon(weaponID weapons.WeaponID) {
+	switch weaponID {
+	case weapons.WEAPON_GUN:
+		p.Weapon = weapons.NewGun()
+	case weapons.WEAPON_BOMB:
+		p.Weapon = weapons.NewBomb()
+	}
+}

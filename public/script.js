@@ -298,6 +298,26 @@ class Game {
                             })
                         );
                 } break;
+                case "Digit1": {
+                        this.ws.send(
+                            encodeMsg({
+                                type: "MSG_WEAPON",
+                                data: {
+                                    weapon: Weapons.WEAPON_GUN,
+                                },
+                            })
+                        );
+                } break;
+                case "Digit2": {
+                        this.ws.send(
+                            encodeMsg({
+                                type: "MSG_WEAPON",
+                                data: {
+                                    weapon: Weapons.WEAPON_BOMB,
+                                },
+                            })
+                        );
+                } break;
             }
         });
 

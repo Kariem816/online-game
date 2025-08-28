@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"online-game/types"
+	"online-game/weapons"
 
 	"github.com/gofiber/fiber/v2/log"
 )
@@ -41,6 +42,10 @@ type StartMessage struct{}
 type StartedMessage struct{}
 
 type TeamMessage struct{}
+
+type WeaponMessage struct {
+	Weapon weapons.WeaponID
+}
 
 type MoveMessage struct {
 	Up    bool
@@ -105,6 +110,7 @@ const (
 	MSG_STARTED uint8 = iota
 	MSG_TEAM    uint8 = iota
 	MSG_TEAMED  uint8 = iota
+	MSG_WEAPON  uint8 = iota
 	MSG_MOVE    uint8 = iota
 	MSG_MOVED   uint8 = iota
 	MSG_SHOOT   uint8 = iota
@@ -249,6 +255,25 @@ func (tm *TeamMessage) Parse(gm GenericMessage) bool {
 // func (tm TeamedMessage) Buffer() (*bytes.Buffer, bool) {
 
 // }
+
+func (wm *WeaponMessage) Parse(gm GenericMessage) bool {
+	if gm.Type != MSG_WEAPON {
+		return false
+	}
+
+	if len(gm.Args) != 1 {
+		return false
+	}
+
+	messageWeapon := gm.Args[0]
+	if messageWeapon >= uint8(weapons.WEAPON_COUNT) {
+		return false
+	}
+
+	wm.Weapon = weapons.WeaponID(gm.Args[0])
+
+	return true
+}
 
 func (mm *MoveMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_MOVE {

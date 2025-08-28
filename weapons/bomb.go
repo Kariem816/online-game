@@ -3,8 +3,8 @@ package weapons
 import (
 	"time"
 
-	"online-game/types/omath"
 	"online-game/consts"
+	"online-game/types/omath"
 
 	"github.com/chewxy/math32"
 )
@@ -17,8 +17,8 @@ type Bomb struct {
 const bombRange = 4
 
 var baseBomb = BaseWeapon{
-	id: WEAPON_BOMB,
-	cooldown: 3 * time.Second,
+	id:       WEAPON_BOMB,
+	cooldown: 3000 * time.Millisecond,
 }
 
 func NewBomb() *Bomb {
@@ -56,19 +56,15 @@ func (b *Bomb) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVecto
 	px := pos.X + 0.5
 	py := pos.Y + 0.5
 
-	cx := px + bombRange * math32.Cos(theta)
-	cy := py + bombRange * math32.Sin(theta)
+	cx := px + bombRange*math32.Cos(theta)
+	cy := py + bombRange*math32.Sin(theta)
 	defer b.setCooldown()
 	return []omath.IVector2{
-		{X: int32(cx-1), Y: int32(cy-1)},
-		{X: int32(cx-1), Y: int32(cy)},
-		{X: int32(cx-1), Y: int32(cy+1)},
-		{X: int32(cx),   Y: int32(cy-1)},
-		{X: int32(cx),   Y: int32(cy)},
-		{X: int32(cx),   Y: int32(cy+1)},
-		{X: int32(cx+1), Y: int32(cy-1)},
-		{X: int32(cx+1), Y: int32(cy)},
-		{X: int32(cx+1), Y: int32(cy+1)},
+		{X: int32(cx - 1), Y: int32(cy)},
+		{X: int32(cx), Y: int32(cy - 1)},
+		{X: int32(cx), Y: int32(cy)},
+		{X: int32(cx), Y: int32(cy + 1)},
+		{X: int32(cx + 1), Y: int32(cy)},
 	}
 }
 

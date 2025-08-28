@@ -11,6 +11,7 @@ const MESSAGES = enumJS({}, [
     "MSG_STARTED",
     "MSG_TEAM",
     "MSG_TEAMED",
+    "MSG_WEAPON",
     "MSG_MOVE",
     "MSG_MOVED",
     "MSG_SHOOT",
@@ -178,6 +179,7 @@ function decodeMsg(msg) {
         case "MSG_LEAVE":
         case "MSG_START":
         case "MSG_TEAM":
+        case "MSG_WEAPON":
         case "MSG_MOVE":
         case "MSG_SHOOT":
         case "MSG_CHAT":
@@ -238,6 +240,12 @@ function encodeMsg(msg) {
         case "MSG_SHOOT":
             buf = new Uint8Array(1);
             buf[0] = type;
+            break;
+        case "MSG_WEAPON":
+            const { weapon } = msg.data;
+            buf = new Uint8Array(2);
+            buf[0] = type;
+            buf[1] = weapon;
             break;
         case "MSG_MOVE":
             const { direction, start } = msg.data;
