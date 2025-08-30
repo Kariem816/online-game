@@ -9,6 +9,7 @@ import (
 	"online-game/entities"
 	"online-game/msgs"
 	"online-game/types"
+	"online-game/weapons"
 	"strings"
 	"time"
 
@@ -83,6 +84,12 @@ func main() {
 		}
 	}()
 
+	syncMsg := msgs.SyncMessage{
+		GameLength:    int32(consts.GameDuration.Milliseconds()),
+		MovementSpeed: consts.PlayerSpeed,
+		Weapons:       weapons.List(),
+	}
+
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			return c.Next()
@@ -95,6 +102,7 @@ func main() {
 		user := entities.NewUser(c, id, randomName())
 		cm := msgs.ConnectedMessage{ID: id, Username: user.Username}
 		user.SendMessage(cm)
+		user.SendMessage(syncMsg)
 
 		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
 		for {

@@ -139,7 +139,7 @@ func (p *Player) Cooldown() uint8 {
 	return uint8(p.Weapon.CooldownLeft() * 100 / p.Weapon.Cooldown())
 }
 
-func (p *Player) ChangeWeapon(weaponID weapons.WeaponID) {
+func (p *Player) ChangeWeapon(weaponID types.WeaponID) {
 	switch weaponID {
 	case weapons.WEAPON_GUN:
 		p.Weapon = weapons.NewGun()

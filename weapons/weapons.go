@@ -3,11 +3,12 @@ package weapons
 import (
 	"time"
 
+	"online-game/types"
 	"online-game/types/omath"
 )
 
 type Weapon interface {
-	ID() WeaponID
+	ID() types.WeaponID
 	Name() string
 	Update()
 	// GetIsCooldown() bool
@@ -17,20 +18,32 @@ type Weapon interface {
 	// Props() map[string]interface{}
 	Shoot(pos omath.Vector2, r float32, thata float32) []omath.IVector2
 	// PhantomShoot(pos, loc omath.Vector2) ([]types.CellResult, error) // doesn't fire cooldown
+
+	ToSyncMessage() types.SyncMessageWeapon
 }
 
 type BaseWeapon struct {
-	id       WeaponID
+	id       types.WeaponID
 	cooldown time.Duration
 	// holdable    bool
 	// activated   bool
 	// activatedAt time.Time
 }
 
-type WeaponID uint8
-
 const (
-	WEAPON_GUN   WeaponID = iota
-	WEAPON_BOMB           = iota
-	WEAPON_COUNT          = iota
+	WEAPON_GUN   types.WeaponID = iota
+	WEAPON_BOMB                 = iota
+	WEAPON_COUNT                = iota
 )
+
+func List() []types.SyncMessageWeapon {
+	weapons := []Weapon{
+		NewGun(),
+		NewBomb(),
+	}
+	ws := make([]types.SyncMessageWeapon, len(weapons))
+	for i, weapon := range weapons {
+		ws[i] = weapon.ToSyncMessage()
+	}
+	return ws
+}

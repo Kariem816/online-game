@@ -3,20 +3,20 @@ package weapons
 import (
 	"time"
 
-	"online-game/types/omath"
 	"online-game/consts"
+	"online-game/types"
+	"online-game/types/omath"
 
 	"github.com/chewxy/math32"
 )
 
 type Gun struct {
 	BaseWeapon
-	id WeaponID
 	cooldownLeft time.Duration
 }
 
 var baseGun = BaseWeapon{
-	id: WEAPON_GUN,
+	id:       WEAPON_GUN,
 	cooldown: 500 * time.Millisecond,
 }
 
@@ -26,7 +26,7 @@ func NewGun() *Gun {
 	}
 }
 
-func (g *Gun) ID() WeaponID {
+func (g *Gun) ID() types.WeaponID {
 	return g.id
 }
 
@@ -64,3 +64,10 @@ func (g *Gun) setCooldown() {
 	g.cooldownLeft = g.cooldown
 }
 
+func (g *Gun) ToSyncMessage() types.SyncMessageWeapon {
+	return types.SyncMessageWeapon{
+		ID:       g.ID(),
+		Cooldown: uint32(g.Cooldown().Milliseconds()),
+		Name:     g.Name(),
+	}
+}

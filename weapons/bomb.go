@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"online-game/consts"
+	"online-game/types"
 	"online-game/types/omath"
 
 	"github.com/chewxy/math32"
@@ -27,7 +28,7 @@ func NewBomb() *Bomb {
 	}
 }
 
-func (b *Bomb) ID() WeaponID {
+func (b *Bomb) ID() types.WeaponID {
 	return b.id
 }
 
@@ -70,4 +71,12 @@ func (b *Bomb) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVecto
 
 func (b *Bomb) setCooldown() {
 	b.cooldownLeft = b.cooldown
+}
+
+func (b *Bomb) ToSyncMessage() types.SyncMessageWeapon {
+	return types.SyncMessageWeapon{
+		ID:       b.ID(),
+		Cooldown: uint32(b.Cooldown().Milliseconds()),
+		Name:     b.Name(),
+	}
 }

@@ -21,6 +21,7 @@ const MESSAGES = enumJS({}, [
     "MSG_MAP",
     "MSG_STATE",
     "MSG_MOUSE",
+    "MSG_SYNC",
     "MSG_SYSTEM",
     "MSG_ERROR",
 ]);
@@ -157,6 +158,20 @@ function decodeMsg(msg) {
                 });
                 const usernameLen = getUint8(view, state);
                 data.players[i].user.username = getString(view, usernameLen, state);
+            }
+        } break;
+        case "MSG_SYNC": {
+            data.gameLength = getInt32(view, state);
+            data.movementSpeed = getFloat32(view, state);
+            const weaponsLen = getUint8(view, state);
+            data.weapons = new Array(weaponsLen);
+            for (let i = 0; i < weaponsLen; i++) {
+                const weapon = {};
+                weapon.id = getUint8(view, state);
+                weapon.cooldown = getInt32(view, state);
+                const nameLen = getUint8(view, state);
+                weapon.name = getString(view, nameLen, state);
+                data.weapons[i] = weapon;
             }
         } break;
         case "MSG_SYSTEM":

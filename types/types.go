@@ -2,7 +2,6 @@ package types
 
 import (
 	"online-game/types/omath"
-	"online-game/weapons"
 )
 
 type UserID int16
@@ -11,6 +10,8 @@ type Tile uint8
 type GamePhase uint8
 
 type TeamID uint8
+
+type WeaponID uint8
 
 type GameMap struct {
 	Width  int32
@@ -42,7 +43,7 @@ type StateMessageState struct {
 
 type StateMessagePlayer struct {
 	Team     TeamID
-	Weapon   weapons.WeaponID
+	Weapon   WeaponID
 	Pos      omath.Vector2
 	Vel      omath.IVector2
 	Theta    float32
@@ -59,4 +60,10 @@ type CellResult struct {
 	X     int32
 	Y     int32
 	State Tile
+}
+
+type SyncMessageWeapon struct {
+	ID       WeaponID
+	Cooldown uint32
+	Name     string
 }

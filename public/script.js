@@ -1,8 +1,5 @@
 const root = document.getElementById("root");
 
-// CONSTANTS
-const playerSpeed = 10;
-const gameDuration = 60 * 1000; // 1 minute
 // Game States
 const GAME_PHASES = enumJS({}, [
     "WaitingForPlayers",
@@ -231,16 +228,19 @@ class Mouse {
 
 class Game {
     isServerUpdated = false;
-    constructor(ws, renderer, myData) {
+    constructor(ws, renderer, extras) {
         this.ws = ws;
         this.renderer = renderer;
         this.ctx = renderer.getContext("2d"); // shouldn't fail ?!
 
         this.mouse = new Mouse(renderer.width / 2, renderer.height / 2);
-        this.mouse.setLimits(this.renderer.width, this.renderer.height)
+        this.mouse.setLimits(this.renderer.width, this.renderer.height);
 
         this.state = {};
         this.map = new GameMap();
+        
+        const { syncData, ...myData } = extras;
+        this.constants = syncData;
         this.myData = myData;
 
         this.mmcb = this.onMouseMove.bind(this);
@@ -499,8 +499,8 @@ class Game {
         // Players State
         if (this.state.state.phase === GAME_PHASES.Playing && !this.isServerUpdated) {
             for (const player of this.state.players) {
-                let newX = player.x + player.vx * dt * playerSpeed;
-                let newY = player.y + player.vy * dt * playerSpeed;
+                let newX = player.x + player.vx * dt * this.constants.movementSpeed;
+                let newY = player.y + player.vy * dt * this.constants.movementSpeed;
 
                 const { tile, bottom, right, bottomRight } = this.map.getAround(Math.floor(newX), Math.floor(newY));
                 const cornerX = newX - Math.floor(newX) > 0;
@@ -533,7 +533,12 @@ class Game {
                 player.x = newX;
                 player.y = newY;
 
-                // TODO: update cooldown
+                if (player.cooldown > 0) {
+                    // TODO: consider making player cooldown not a percentage
+                    const playerWeapon = this.constants.weapons.find((w) => w.id === player.weapon);
+                    const cooldownTime = player.cooldown * playerWeapon.cooldown / 100 - dt * 1000;
+                    player.cooldown = Math.max(0, cooldownTime) / playerWeapon.cooldown * 100;
+                }
             }
         } else {
             this.isServerUpdated = false;
@@ -587,9 +592,9 @@ class Game {
         // Top bar
         let timeLeft;
         if (this.state.state.phase === GAME_PHASES.Playing || this.state.state.phase === GAME_PHASES.GettingReady) {
-            const start = new Date(this.state.startedAt);
+            const start = this.state.startedAt;
             const now = new Date();
-            timeLeft = gameDuration - (now - start);
+            timeLeft = this.constants.gameLength - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
             if (timeLeft <= 0) {
                 this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
@@ -741,7 +746,7 @@ class Game {
                 const y = me.y + mapHeightOffset;
                 this.ctx.fillStyle = "#f0f0f0";
                 this.ctx.textAlign = "center";
-                const secs = Math.ceil((timeLeft - gameDuration) / 1000);
+                const secs = Math.ceil((timeLeft - this.constants.gameLength) / 1000);
                 this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
@@ -967,6 +972,9 @@ class Application {
     /** @type {string?} */
     myUsername;
 
+    /** @type {Object{length: number, speed: number, weapons: Object{id: number, cooldown: number, name: string}[]}} */
+    syncData;
+
     /** @type {Game?} */
     game;
 
@@ -996,12 +1004,16 @@ class Application {
                         this.myUsername = msg.data.username;
                         this.react.updateUsername(this.myUsername);
                 } break;
+                case "MSG_SYNC": {
+                    this.syncData = msg.data;
+                } break;
                 case "MSG_HOSTED":
                 case "MSG_JOINED": {
                         const canvas = this.react.GameScreen();
                         this.game = new Game(ws, canvas, {
                             id: this.myId,
                             username: this.myUsername,
+                            syncData: this.syncData,
                         });
                 } break;
                 case "MSG_STATE": {

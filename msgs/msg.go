@@ -44,7 +44,7 @@ type StartedMessage struct{}
 type TeamMessage struct{}
 
 type WeaponMessage struct {
-	Weapon weapons.WeaponID
+	Weapon types.WeaponID
 }
 
 type MoveMessage struct {
@@ -57,8 +57,6 @@ type MoveMessage struct {
 type MovedMessage struct{}
 
 type ShootMessage struct{}
-
-// TODO: maybe introduce a new structure to hold cells for separation of concerns
 type ShotMessage struct {
 	Cells []types.CellResult
 }
@@ -85,8 +83,13 @@ type StateMessage struct {
 
 type MouseMessage struct {
 	DX int32
-
 	DY int32
+}
+
+type SyncMessage struct {
+	GameLength    int32
+	MovementSpeed float32
+	Weapons       []types.SyncMessageWeapon
 }
 
 type SystemMessage struct {
@@ -119,6 +122,7 @@ const (
 	MSG_MAP     uint8 = iota
 	MSG_STATE   uint8 = iota
 	MSG_MOUSE   uint8 = iota
+	MSG_SYNC    uint8 = iota
 	MSG_SYSTEM  uint8 = iota
 	MSG_ERROR   uint8 = iota
 	MSG_LEN     uint8 = iota
@@ -269,7 +273,7 @@ func (wm *WeaponMessage) Parse(gm GenericMessage) bool {
 		return false
 	}
 
-	wm.Weapon = weapons.WeaponID(gm.Args[0])
+	wm.Weapon = types.WeaponID(gm.Args[0])
 
 	return true
 }
@@ -412,6 +416,23 @@ func (mm *MouseMessage) Parse(gm GenericMessage) bool {
 	binary.Read(reader, binary.LittleEndian, &mm.DY)
 
 	return true
+}
+
+func (sm SyncMessage) Buffer() (*bytes.Buffer, bool) {
+	buf := new(bytes.Buffer)
+
+	buf.WriteByte(MSG_SYNC)
+	binary.Write(buf, binary.LittleEndian, sm.GameLength)
+	binary.Write(buf, binary.LittleEndian, sm.MovementSpeed)
+	buf.WriteByte(uint8(len(sm.Weapons)))
+	for _, w := range sm.Weapons {
+		binary.Write(buf, binary.LittleEndian, w.ID)
+		binary.Write(buf, binary.LittleEndian, w.Cooldown)
+		binary.Write(buf, binary.LittleEndian, uint8(len(w.Name)))
+		buf.WriteString(w.Name)
+	}
+
+	return buf, true
 }
 
 func (sm SystemMessage) Buffer() (*bytes.Buffer, bool) {
