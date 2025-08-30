@@ -33,7 +33,7 @@ func UpdateState() {
 
 func BroadcastState() {
 	for _, game := range entities.Games {
-		if game.State.Phase != entities.Playing && !game.LC {
+		if !game.Started() && !game.LC {
 			continue
 		}
 		game.BroadcastState()
@@ -221,9 +221,6 @@ func main() {
 					user.Error("You are not in a game")
 					continue
 				}
-				if game.State.Phase != entities.Playing {
-					continue
-				}
 
 				mm := msgs.MoveMessage{}
 				ok := mm.Parse(gmsg)
@@ -252,9 +249,6 @@ func main() {
 					user.Error("You are not in a game")
 					continue
 				}
-				if game.State.Phase != entities.Playing {
-					continue
-				}
 
 				sm := msgs.ShootMessage{}
 				ok := sm.Parse(gmsg)
@@ -271,9 +265,6 @@ func main() {
 			case msgs.MSG_MOUSE:
 				if game == nil {
 					user.Error("You are not in a game")
-					continue
-				}
-				if game.State.Phase != entities.Playing {
 					continue
 				}
 

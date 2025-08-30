@@ -6,6 +6,7 @@ const gameDuration = 60 * 1000; // 1 minute
 // Game States
 const GAME_PHASES = enumJS({}, [
     "WaitingForPlayers",
+    "GettingReady",
     "Playing",
     "GameOver",
 ])
@@ -37,7 +38,7 @@ function appendMessage(from, message) {
     const chatBox = document.getElementById("chatBox");
     if (!chatBox) return false;
 
-    const chatMessage = document.createElement("div");
+    const chatMessage = document.createElement("p");
     chatMessage.classList.add("chat-message");
     chatBox.appendChild(chatMessage);
 
@@ -45,6 +46,9 @@ function appendMessage(from, message) {
     sender.textContent = from;
     sender.classList.add("chat-sender");
     chatMessage.appendChild(sender);
+
+    const space = document.createTextNode(" ");
+    chatMessage.appendChild(space);
 
     const msg = document.createElement("span");
     msg.textContent = message;
@@ -163,6 +167,68 @@ class GameMap {
     }
 }
 
+class Mouse {
+    #xLimit = Infinity;
+    #yLimit = Infinity;
+    #lastState = false;
+    #justChanged = true;
+
+    constructor(x, y, down = false) {
+        this.x = x;
+        this.y = y;
+        this.state = down;
+    }
+
+    setLimits(x, y) {
+        this.#xLimit = x;
+        this.#yLimit = y;
+    }
+
+    translate(dx, dy) {
+        this.x = clamp(this.x + dx, 0, this.#xLimit);
+        this.y = clamp(this.y + dy, 0, this.#yLimit);
+    }
+
+    moveTo(x, y) {
+        this.x = clamp(x, 0, this.#xLimit);
+        this.y = clamp(y, 0, this.#yLimit);
+    }
+
+    up() {
+        this.#lastState = this.state;
+        this.state = false;
+        this.#justChanged = true;
+    }
+
+    down() {
+        this.#lastState = this.state;
+        this.state = true;
+        this.#justChanged = true;
+    }
+
+    // currently down
+    isDown() {
+        return this.state;
+    }
+
+    // first frame to be down
+    isClicked() {
+        return this.state && !this.#lastState;
+    }
+
+    isInside(x1, y1, x2, y2) {
+        return (this.x >= x1 && this.x <= x2) && (this.y >= y1 && this.y <= y2);
+    }
+
+    update() {
+        if (this.#justChanged) {
+            this.#justChanged = false;
+            return;
+        }
+        this.#lastState = this.state;
+    }
+}
+
 class Game {
     isServerUpdated = false;
     constructor(ws, renderer, myData) {
@@ -170,16 +236,17 @@ class Game {
         this.renderer = renderer;
         this.ctx = renderer.getContext("2d"); // shouldn't fail ?!
 
-        this.mouse = { x: renderer.width / 2, y: renderer.height / 2 };
+        this.mouse = new Mouse(renderer.width / 2, renderer.height / 2);
+        this.mouse.setLimits(this.renderer.width, this.renderer.height)
 
         this.state = {};
         this.map = new GameMap();
         this.myData = myData;
 
-        // fuck js `this`
         this.mmcb = this.onMouseMove.bind(this);
         this.lpcb = this.onClickLockPointer.bind(this);
-        this.cscb = this.onClickShoot.bind(this);
+        this.mdcb = this.onMouseDown.bind(this);
+        this.mucb = this.onMouseUp.bind(this);
         this.setupControls();
     }
 
@@ -323,26 +390,39 @@ class Game {
 
         const canvas = this.renderer;
         canvas.addEventListener("click", this.lpcb);
+        canvas.addEventListener("mousemove", this.mmcb);
+        canvas.addEventListener("mousedown", this.mdcb);
+        canvas.addEventListener("mouseup", this.mucb);
         document.addEventListener("pointerlockchange", this.onLockChangeAlert.bind(this), false);
     }
 
     async onClickLockPointer() {
+        if (document.pointerLockElement === this.renderer) return;
         await this.renderer.requestPointerLock();
     }
+    
+    onMouseDown() {
+        if (document.pointerLockElement !== this.renderer) return;
+        this.mouse.down();
+    }
 
-    onClickShoot() {
-        this.ws.send(
-            encodeMsg({
-                type: "MSG_SHOOT",
-            })
-        );
+    onMouseUp() {
+        if (document.pointerLockElement !== this.renderer) return;
+        this.mouse.up();
+    }
+
+    gameStarted() {
+        return this.state.state.phase === GAME_PHASES.GettingReady || this.state.state.phase === GAME_PHASES.Playing;
     }
 
     onMouseMove(e) {
-        this.mouse.x = clamp(this.mouse.x + e.movementX, 0, this.renderer.width);
-        this.mouse.y = clamp(this.mouse.y + e.movementY, 0, this.renderer.height);
+        if (document.pointerLockElement !== this.renderer) return;
+        this.mouse.translate(e.movementX, e.movementY);
 
-        if (this.state.started) {
+        // TODO: this should be moved into update function
+        // at the same time it is a waste to send pointer location every frame
+        // this is a problem for future me
+        if (this.gameStarted()) {
             const { x, y } = this.canvasToGameCoords(this.mouse);
 
             this.ws.send(
@@ -356,19 +436,13 @@ class Game {
 
     onLockChangeAlert() {
         if (document.pointerLockElement === this.renderer) {
-            this.renderer.addEventListener("mousemove", this.mmcb, false);
-            this.renderer.removeEventListener("click", this.lpcb);
-            this.renderer.addEventListener("click", this.cscb);
-            if (this.state.started) {
+            if (this.gameStarted()) {
                 const myPlayer = this.getMyPlayer();
-                this.mouse = this.gameCoordsToCanvas({ x: myPlayer.x, y: myPlayer.y });
+                const { x, y } = this.gameCoordsToCanvas({ x: myPlayer.x, y: myPlayer.y })
+                this.mouse.moveTo(x, y);
             } else {
-                this.mouse = { x: this.renderer.width / 2, y: this.renderer.height / 2 };
+                this.mouse.moveTo(this.renderer.width / 2, this.renderer.height / 2 );
             }
-        } else {
-            this.renderer.removeEventListener("mousemove", this.mmcb, false);
-            this.renderer.addEventListener("click", this.lpcb);
-            this.renderer.removeEventListener("click", this.cscb);
         }
     }
 
@@ -416,11 +490,14 @@ class Game {
     }
 
     update(dt) {
-        if (this.state.started && !this.isServerUpdated) {
-            if (one) {
-                console.log(gameState);
-                one = false;
-            }
+        // Logging
+        if (one) {
+            console.log({ state: this.state, serverUpdated: this.isServerUpdated });
+            one = false;
+        }
+
+        // Players State
+        if (this.state.state.phase === GAME_PHASES.Playing && !this.isServerUpdated) {
             for (const player of this.state.players) {
                 let newX = player.x + player.vx * dt * playerSpeed;
                 let newY = player.y + player.vy * dt * playerSpeed;
@@ -455,9 +532,29 @@ class Game {
 
                 player.x = newX;
                 player.y = newY;
+
+                // TODO: update cooldown
             }
         } else {
             this.isServerUpdated = false;
+        }
+
+        // Mouse
+        this.mouse.update();
+        if (this.mouse.isClicked() && this.mouse.isInside(0, 0, this.renderer.width * 0.1, this.renderer.height * 0.1)) {
+            // copy room code
+            copyText(this.state.room);
+            appendSystemMessage("SYS_MSG_INFO", "Copied room code to clipboard");
+        }
+        if (this.mouse.isDown() && this.gameStarted()) {
+            const myPlayer = this.getMyPlayer();
+            if (myPlayer.cooldown <= 0) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_SHOOT",
+                    })
+                );
+            }
         }
     }
 
@@ -476,6 +573,11 @@ class Game {
         this.ctx.fillStyle = "#353535";
         this.ctx.fillRect(0, 0, width, height);
 
+        // Top Left Corner
+        if (this.mouse.isInside(0, 0, wOffset, hOffset)) {
+            this.ctx.fillStyle = "#555555"
+            this.ctx.fillRect(0, 0, wOffset, hOffset);
+        }
         this.ctx.fillStyle = "#f0f0f0";
         this.ctx.font = "30px Arial";
         this.ctx.textAlign = "center";
@@ -483,10 +585,10 @@ class Game {
         this.ctx.fillText(`Room: ${this.state.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
 
         // Top bar
-        if (this.state.started) {
-            const started = new Date(this.state.startedAt);
+        if (this.state.state.phase === GAME_PHASES.Playing || this.state.state.phase === GAME_PHASES.GettingReady) {
+            const start = new Date(this.state.startedAt);
             const now = new Date();
-            const left = gameDuration - (now - started);
+            const left = gameDuration - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
             if (left <= 0) {
                 this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
@@ -529,7 +631,7 @@ class Game {
         this.ctx.fillRect(wOffset, hOffset, wRest, hRest);
 
         // Render map
-        if (this.state.state.phase === GAME_PHASES.Playing) {
+        if (this.gameStarted()) {
             const { width: mapWidth, height: mapHeight } = this.map;
             const cellWidth = Math.floor(wRest / mapWidth);
             const mapWidthOffset = wOffset / cellWidth;
@@ -620,7 +722,7 @@ class Game {
 
                     this.ctx.stroke();
                 }
-
+                
                 // render player weapon
                 DrawWeapon[player.weapon](
                     this.ctx,
@@ -630,6 +732,15 @@ class Game {
                     { x: x + 0.5, y: y + 0.5 },
                     player.theta,
                 );
+            }
+
+            if (this.state.state.phase === GAME_PHASES.GettingReady) {
+                const me = this.getMyPlayer();
+                const x = me.x + mapWidthOffset;
+                const y = me.y + mapHeightOffset;
+                this.ctx.fillStyle = "#f0f0f0";
+                this.ctx.textAlign = "center";
+                this.ctx.fillText("Get ready!", (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
             this.ctx.fillStyle = "#353535";

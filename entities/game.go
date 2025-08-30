@@ -18,7 +18,6 @@ type Game struct {
 	Room    string
 	LC      bool // large change
 
-	Started   bool
 	StartedAt time.Time
 }
 
@@ -104,7 +103,6 @@ func (g *Game) RemovePlayer(userId types.UserID) {
 		g.Terminate()
 	} else if len(g.Players) < 2 {
 		g.State.Phase = WaitingForPlayers
-		g.Started = false
 		g.State.ScoreA = 0
 		g.State.ScoreB = 0
 		Clear(&g.State.GameMap)
@@ -126,7 +124,7 @@ func (g *Game) GetPlayer(userId types.UserID) *Player {
 }
 
 func (g *Game) SwitchTeams(userId types.UserID) error {
-	if g.State.Phase != WaitingForPlayers {
+	if g.Started() {
 		return errors.New("game has already started")
 	}
 
@@ -146,7 +144,7 @@ func (g *Game) SwitchTeams(userId types.UserID) error {
 }
 
 func (g *Game) Start(userId types.UserID) error {
-	if g.State.Phase == Playing {
+	if g.Started() {
 		return errors.New("game has already started")
 	}
 
@@ -181,15 +179,19 @@ func (g *Game) Start(userId types.UserID) error {
 
 	g.BroadcastMap()
 
-	g.State.Phase = Playing
-	g.Started = true
-	g.StartedAt = time.Now()
+	g.State.Phase = GettingReady
+	g.StartedAt = time.Now().Add(consts.ReadyDuration)
+	g.LC = true
+
+	go g.actuallyStart()
 
 	for _, player := range g.Players {
 		for {
-			player.Pos.X = rand.Float32() * float32(g.State.GameMap.Width)
-			player.Pos.Y = rand.Float32() * float32(g.State.GameMap.Height)
-			if Get(&g.State.GameMap, int32(player.Pos.X+0.5), int32(player.Pos.Y+0.5)) != WallTile {
+			px := RandMN(0, g.State.GameMap.Width)
+			py := RandMN(0, g.State.GameMap.Height)
+			if Get(&g.State.GameMap, px, py) != WallTile {
+				player.Pos.X = float32(px)
+				player.Pos.Y = float32(py)
 				break
 			}
 		}
@@ -198,7 +200,21 @@ func (g *Game) Start(userId types.UserID) error {
 	return nil
 }
 
+func (g *Game) actuallyStart() {
+	g.BroadcastSystem(msgs.SYS_MSG_INFO, fmt.Sprintf("Game starting in %d seconds...", int(consts.ReadyDuration.Seconds())))
+	time.Sleep(time.Until(g.StartedAt))
+	if g.State.Phase != GettingReady {
+		return
+	}
+	g.State.Phase = Playing
+	g.BroadcastSystem(msgs.SYS_MSG_INFO, "Game started!")
+	g.LC = true
+}
+
 func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
+	if g.State.Phase != Playing {
+		return
+	}
 	player := g.GetPlayer(userId)
 	if player != nil {
 		player.Move(direction, start)
@@ -206,6 +222,10 @@ func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
 }
 
 func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
+	if g.State.Phase != Playing {
+		return []types.CellResult{}, nil
+	}
+
 	player := g.GetPlayer(userId)
 	if player == nil {
 		return []types.CellResult{}, errors.New("player not found")
@@ -257,7 +277,7 @@ func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
 }
 
 func (g *Game) MoveMouse(userId types.UserID, dx, dy int32) {
-	if g.State.Phase != Playing {
+	if !g.Started() {
 		return
 	}
 	player := g.GetPlayer(userId)
@@ -267,7 +287,7 @@ func (g *Game) MoveMouse(userId types.UserID, dx, dy int32) {
 }
 
 func (g *Game) Update() {
-	if g.State.Phase != Playing {
+	if !g.Started() {
 		return
 	}
 
@@ -282,7 +302,6 @@ func (g *Game) Update() {
 
 func (g *Game) Finish() {
 	g.State.Phase = GameOver
-	g.Started = false
 	for _, player := range g.Players {
 		player.Reset()
 	}
@@ -325,7 +344,6 @@ func (g *Game) BroadcastState(exclude ...types.UserID) {
 	g.Broadcast(msgs.StateMessage{
 		Host:      g.Host,
 		Room:      g.Room,
-		Started:   g.Started,
 		StartedAt: int32(g.StartedAt.Unix()),
 		State: types.StateMessageState{
 			TeamA:  int32(g.State.TeamA),
@@ -359,4 +377,8 @@ PlayerLoop:
 		}
 		player.User.Send(buf)
 	}
+}
+
+func (g *Game) Started() bool {
+	return g.State.Phase == GettingReady || g.State.Phase == Playing
 }

@@ -14,3 +14,8 @@ async function sleep(ms) {
 function clamp(val, b, t) {
     return Math.min(t, Math.max(val, b));
 }
+
+function copyText(text) {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(text);
+}

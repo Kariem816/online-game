@@ -15,6 +15,7 @@ const (
 
 const (
 	WaitingForPlayers types.GamePhase = iota
+	GettingReady      types.GamePhase = iota
 	Playing           types.GamePhase = iota
 	GameOver          types.GamePhase = iota
 )

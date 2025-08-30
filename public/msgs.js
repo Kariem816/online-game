@@ -122,7 +122,6 @@ function decodeMsg(msg) {
         case "MSG_STATE": {
             data.host = getInt16(view, state);
             data.room = getString(view, 4, state);
-            data.started = getBoolean(view, state);
 
             const unix = getInt32(view, state);
             if (unix <= 0) {
