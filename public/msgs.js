@@ -123,11 +123,13 @@ function decodeMsg(msg) {
             data.host = getInt16(view, state);
             data.room = getString(view, 4, state);
 
-            const unix = getInt32(view, state);
+            const unixSec = getInt32(view, state);
+            const unixMilli = getInt16(view, state);
+            const unix = unixSec * 1000 + unixMilli;
             if (unix <= 0) {
                 data.startedAt = null;
             } else {
-                data.startedAt = new Date(unix * 1000);
+                data.startedAt = new Date(unix);
             }
 
             data.state = {};

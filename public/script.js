@@ -585,16 +585,17 @@ class Game {
         this.ctx.fillText(`Room: ${this.state.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
 
         // Top bar
+        let timeLeft;
         if (this.state.state.phase === GAME_PHASES.Playing || this.state.state.phase === GAME_PHASES.GettingReady) {
             const start = new Date(this.state.startedAt);
             const now = new Date();
-            const left = gameDuration - (now - start);
+            timeLeft = gameDuration - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
-            if (left <= 0) {
+            if (timeLeft <= 0) {
                 this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
             } else {
-                const minutes = Math.floor(left / 1000 / 60).toString().padStart(2, "0");
-                const seconds = (Math.floor(left / 1000) % 60).toString().padStart(2, "0");
+                const minutes = Math.floor(timeLeft / 1000 / 60).toString().padStart(2, "0");
+                const seconds = (Math.floor(timeLeft / 1000) % 60).toString().padStart(2, "0");
                 this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
             }
         } else {
@@ -740,7 +741,8 @@ class Game {
                 const y = me.y + mapHeightOffset;
                 this.ctx.fillStyle = "#f0f0f0";
                 this.ctx.textAlign = "center";
-                this.ctx.fillText("Get ready!", (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
+                const secs = Math.ceil((timeLeft - gameDuration) / 1000);
+                this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
             this.ctx.fillStyle = "#353535";

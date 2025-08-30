@@ -18,6 +18,11 @@ type GameMap struct {
 	Tiles  []Tile
 }
 
+type NetworkTime struct {
+	Sec   int32
+	Milli int16
+}
+
 type GameState struct {
 	GameMap GameMap
 	TeamA   int

@@ -340,11 +340,16 @@ func (g *Game) BroadcastMap(exclude ...types.UserID) {
 }
 
 func (g *Game) BroadcastState(exclude ...types.UserID) {
-	// fmt.Printf("Started At: %v\r\nUnix: %d\r\n int32: %d\r\n", g.StartedAt, int32(g.StartedAt.Unix()), int32(g.StartedAt.Unix()))
+	at := g.StartedAt.UnixMilli()
+	m := at % 1000
+	s := int32((at - m) / 1000)
 	g.Broadcast(msgs.StateMessage{
-		Host:      g.Host,
-		Room:      g.Room,
-		StartedAt: int32(g.StartedAt.Unix()),
+		Host: g.Host,
+		Room: g.Room,
+		StartedAt: types.NetworkTime{
+			Sec:   s,
+			Milli: int16(m),
+		},
 		State: types.StateMessageState{
 			TeamA:  int32(g.State.TeamA),
 			TeamB:  int32(g.State.TeamB),

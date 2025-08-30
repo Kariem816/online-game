@@ -78,7 +78,7 @@ type MapMessage struct {
 type StateMessage struct {
 	Host      types.UserID
 	Room      string
-	StartedAt int32
+	StartedAt types.NetworkTime
 	State     types.StateMessageState
 	Players   []types.StateMessagePlayer
 }
@@ -374,7 +374,8 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 		return nil, false
 	}
 	buf.WriteString(sm.Room)
-	binary.Write(buf, binary.LittleEndian, sm.StartedAt)
+	binary.Write(buf, binary.LittleEndian, sm.StartedAt.Sec)
+	binary.Write(buf, binary.LittleEndian, sm.StartedAt.Milli)
 	binary.Write(buf, binary.LittleEndian, sm.State.TeamA)
 	binary.Write(buf, binary.LittleEndian, sm.State.TeamB)
 	binary.Write(buf, binary.LittleEndian, sm.State.ScoreA)
