@@ -86,7 +86,7 @@ type MouseMessage struct {
 	DY int32
 }
 
-type SyncMessage struct {
+type SettingsMessage struct {
 	GameLength    int32
 	MovementSpeed float32
 	Weapons       []types.SyncMessageWeapon
@@ -101,31 +101,31 @@ type ErrorMessage struct {
 }
 
 const (
-	MSG_CNCT    uint8 = iota
-	MSG_HOST    uint8 = iota
-	MSG_HOSTED  uint8 = iota
-	MSG_JOIN    uint8 = iota
-	MSG_JOINED  uint8 = iota
-	MSG_LEAVE   uint8 = iota
-	MSG_LEFT    uint8 = iota
-	MSG_START   uint8 = iota
-	MSG_STARTED uint8 = iota
-	MSG_TEAM    uint8 = iota
-	MSG_TEAMED  uint8 = iota
-	MSG_WEAPON  uint8 = iota
-	MSG_MOVE    uint8 = iota
-	MSG_MOVED   uint8 = iota
-	MSG_SHOOT   uint8 = iota
-	MSG_SHOT    uint8 = iota
-	MSG_CHAT    uint8 = iota
-	MSG_CHATTED uint8 = iota
-	MSG_MAP     uint8 = iota
-	MSG_STATE   uint8 = iota
-	MSG_MOUSE   uint8 = iota
-	MSG_SYNC    uint8 = iota
-	MSG_SYSTEM  uint8 = iota
-	MSG_ERROR   uint8 = iota
-	MSG_LEN     uint8 = iota
+	MSG_CNCT     uint8 = iota
+	MSG_HOST     uint8 = iota
+	MSG_HOSTED   uint8 = iota
+	MSG_JOIN     uint8 = iota
+	MSG_JOINED   uint8 = iota
+	MSG_LEAVE    uint8 = iota
+	MSG_LEFT     uint8 = iota
+	MSG_START    uint8 = iota
+	MSG_STARTED  uint8 = iota
+	MSG_TEAM     uint8 = iota
+	MSG_TEAMED   uint8 = iota
+	MSG_WEAPON   uint8 = iota
+	MSG_MOVE     uint8 = iota
+	MSG_MOVED    uint8 = iota
+	MSG_SHOOT    uint8 = iota
+	MSG_SHOT     uint8 = iota
+	MSG_CHAT     uint8 = iota
+	MSG_CHATTED  uint8 = iota
+	MSG_MAP      uint8 = iota
+	MSG_STATE    uint8 = iota
+	MSG_MOUSE    uint8 = iota
+	MSG_SETTINGS uint8 = iota
+	MSG_SYSTEM   uint8 = iota
+	MSG_ERROR    uint8 = iota
+	MSG_LEN      uint8 = iota
 )
 
 const (
@@ -418,10 +418,10 @@ func (mm *MouseMessage) Parse(gm GenericMessage) bool {
 	return true
 }
 
-func (sm SyncMessage) Buffer() (*bytes.Buffer, bool) {
+func (sm SettingsMessage) Buffer() (*bytes.Buffer, bool) {
 	buf := new(bytes.Buffer)
 
-	buf.WriteByte(MSG_SYNC)
+	buf.WriteByte(MSG_SETTINGS)
 	binary.Write(buf, binary.LittleEndian, sm.GameLength)
 	binary.Write(buf, binary.LittleEndian, sm.MovementSpeed)
 	buf.WriteByte(uint8(len(sm.Weapons)))

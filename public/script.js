@@ -239,8 +239,8 @@ class Game {
         this.state = {};
         this.map = new GameMap();
         
-        const { syncData, ...myData } = extras;
-        this.constants = syncData;
+        const { settings, ...myData } = extras;
+        this.settings = settings;
         this.myData = myData;
 
         this.mmcb = this.onMouseMove.bind(this);
@@ -499,8 +499,8 @@ class Game {
         // Players State
         if (this.state.state.phase === GAME_PHASES.Playing && !this.isServerUpdated) {
             for (const player of this.state.players) {
-                let newX = player.x + player.vx * dt * this.constants.movementSpeed;
-                let newY = player.y + player.vy * dt * this.constants.movementSpeed;
+                let newX = player.x + player.vx * dt * this.settings.movementSpeed;
+                let newY = player.y + player.vy * dt * this.settings.movementSpeed;
 
                 const { tile, bottom, right, bottomRight } = this.map.getAround(Math.floor(newX), Math.floor(newY));
                 const cornerX = newX - Math.floor(newX) > 0;
@@ -535,7 +535,7 @@ class Game {
 
                 if (player.cooldown > 0) {
                     // TODO: consider making player cooldown not a percentage
-                    const playerWeapon = this.constants.weapons.find((w) => w.id === player.weapon);
+                    const playerWeapon = this.settings.weapons.find((w) => w.id === player.weapon);
                     const cooldownTime = player.cooldown * playerWeapon.cooldown / 100 - dt * 1000;
                     player.cooldown = Math.max(0, cooldownTime) / playerWeapon.cooldown * 100;
                 }
@@ -594,7 +594,7 @@ class Game {
         if (this.state.state.phase === GAME_PHASES.Playing || this.state.state.phase === GAME_PHASES.GettingReady) {
             const start = this.state.startedAt;
             const now = new Date();
-            timeLeft = this.constants.gameLength - (now - start);
+            timeLeft = this.settings.gameLength - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
             if (timeLeft <= 0) {
                 this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
@@ -746,7 +746,7 @@ class Game {
                 const y = me.y + mapHeightOffset;
                 this.ctx.fillStyle = "#f0f0f0";
                 this.ctx.textAlign = "center";
-                const secs = Math.ceil((timeLeft - this.constants.gameLength) / 1000);
+                const secs = Math.ceil((timeLeft - this.settings.gameLength) / 1000);
                 this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
@@ -973,7 +973,7 @@ class Application {
     myUsername;
 
     /** @type {Object{length: number, speed: number, weapons: Object{id: number, cooldown: number, name: string}[]}} */
-    syncData;
+    settings;
 
     /** @type {Game?} */
     game;
@@ -1004,8 +1004,8 @@ class Application {
                         this.myUsername = msg.data.username;
                         this.react.updateUsername(this.myUsername);
                 } break;
-                case "MSG_SYNC": {
-                    this.syncData = msg.data;
+                case "MSG_SETTINGS": {
+                    this.settings = msg.data;
                 } break;
                 case "MSG_HOSTED":
                 case "MSG_JOINED": {
@@ -1013,7 +1013,7 @@ class Application {
                         this.game = new Game(ws, canvas, {
                             id: this.myId,
                             username: this.myUsername,
-                            syncData: this.syncData,
+                            settings: this.settings,
                         });
                 } break;
                 case "MSG_STATE": {

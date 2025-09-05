@@ -84,7 +84,7 @@ func main() {
 		}
 	}()
 
-	syncMsg := msgs.SyncMessage{
+	settingsMsg := msgs.SettingsMessage{
 		GameLength:    int32(consts.GameDuration.Milliseconds()),
 		MovementSpeed: consts.PlayerSpeed,
 		Weapons:       weapons.List(),
@@ -102,7 +102,7 @@ func main() {
 		user := entities.NewUser(c, id, randomName())
 		cm := msgs.ConnectedMessage{ID: id, Username: user.Username}
 		user.SendMessage(cm)
-		user.SendMessage(syncMsg)
+		user.SendMessage(settingsMsg)
 
 		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
 		for {

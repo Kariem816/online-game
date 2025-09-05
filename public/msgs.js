@@ -21,7 +21,7 @@ const MESSAGES = enumJS({}, [
     "MSG_MAP",
     "MSG_STATE",
     "MSG_MOUSE",
-    "MSG_SYNC",
+    "MSG_SETTINGS",
     "MSG_SYSTEM",
     "MSG_ERROR",
 ]);
@@ -160,7 +160,7 @@ function decodeMsg(msg) {
                 data.players[i].user.username = getString(view, usernameLen, state);
             }
         } break;
-        case "MSG_SYNC": {
+        case "MSG_SETTINGS": {
             data.gameLength = getInt32(view, state);
             data.movementSpeed = getFloat32(view, state);
             const weaponsLen = getUint8(view, state);
