@@ -486,7 +486,7 @@ class Game {
     }
 
     getMyPlayer() {
-        return this.state.players.find((p) => p.id === this.id);
+        return this.state.players.find((p) => p.user.id === this.myData.id);
     }
 
     update(dt) {
