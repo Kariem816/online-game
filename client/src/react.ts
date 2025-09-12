@@ -1,63 +1,66 @@
-import { makeEnum } from "./utils.js";
-import { encodeMsg } from "./msgs.js";
-import { appendSystemMessage } from "./chat.js";
+import { encode, Messages, SystemMessageType } from "./msgs";
+import { appendSystemMessage } from "./chat";
 
-const root = document.getElementById("root");
-export const Screens = makeEnum([
+const root = document.getElementById("app")!;
+export enum Screen {
     "Home",
     "Game",
-]);
+}
 
-function hostRoom(ws) {
+function hostRoom(ws: WebSocket) {
     ws.send(
-        encodeMsg({
-            type: "MSG_HOST",
+        encode({
+            type: Messages.MSG_HOST,
+            data: {},
         })
     );
 }
 
-function joinRoom(ws, roomInput) {
+function joinRoom(ws: WebSocket, roomInput: HTMLInputElement) {
     const room = roomInput.value;
-    const buf = encodeMsg({
-        type: "MSG_JOIN",
-        data: { room },
-    })
-    if (buf.error) {
-        alert(buf.error);
+    try {
+        const buf = encode({
+            type: Messages.MSG_JOIN,
+            data: { room },
+        })
+        ws.send(buf);
+    } catch (e: any) {
+        alert(e.message);
         return;
     }
-    ws.send(buf);
 }
 
-function leaveRoom(ws) {
+function leaveRoom(ws: WebSocket) {
     ws.send(
-        encodeMsg({
-            type: "MSG_LEAVE",
+        encode({
+            type: Messages.MSG_LEAVE,
+            data: {},
         })
     );
 }
 
-function chat(ws, chatInput) {
+function chat(ws: WebSocket, chatInput: HTMLInputElement) {
     const message = chatInput.value;
     if (!message) return;
-    const buf = encodeMsg({
-        type: "MSG_CHAT",
-        data: { message },
-    });
-
-    if (buf.error) {
-        appendSystemMessage("SYS_MSG_ERROR", buf.error);
+    try {
+        const buf = encode({
+            type: Messages.MSG_CHAT,
+            data: { message },
+        });
+        ws.send(buf);
+        chatInput.value = "";
+    } catch (e: any) {
+        appendSystemMessage(SystemMessageType.SYS_MSG_ERROR, e.message);
         return;
     }
-
-    ws.send(buf);
-    chatInput.value = "";
 }
 
 export default class React {
-    active = Screens.Home;
+    active = Screen.Home;
+    ws: WebSocket;
+    username: string;
 
-    constructor(ws) {
+    constructor(ws: WebSocket) {
         this.ws = ws;
         this.username = "Unknown";
 
@@ -65,25 +68,25 @@ export default class React {
     }
 
     #rerender() {
-        if (this.active === Screens.Home) {
+        if (this.active === Screen.Home) {
             this.HomeScreen();
-        } else if (this.active === Screens.Game) {
+        } else if (this.active === Screen.Game) {
             this.GameScreen();
         }
     }
 
-    updateWs(ws) {
+    updateWs(ws: WebSocket) {
         this.ws = ws;
         this.#rerender();
     }
 
-    updateUsername(username) {
+    updateUsername(username: string) {
         this.username = username;
         this.#rerender();
     }
 
     HomeScreen() {
-        this.active = Screens.Home;
+        this.active = Screen.Home;
 
         const center = document.createElement("div");
         center.classList.add("center", "full-height");
@@ -135,7 +138,7 @@ export default class React {
     }
 
     GameScreen() {
-        this.active = Screens.Game;
+        this.active = Screen.Game;
 
         const container = document.createElement("div");
         container.classList.add("game-container", "full-height");
@@ -208,13 +211,13 @@ export default class React {
             leaveRoom(this.ws);
         });
 
-        appendSystemMessage("SYS_MSG_INFO", "Welcome to the game");
-        appendSystemMessage("SYS_MSG_SUCCESS", "Your username is " + this.username);
-        appendSystemMessage("SYS_MSG_INFO", "Use WASD to move");
-        appendSystemMessage("SYS_MSG_INFO", "Click to shoot");
-        appendSystemMessage("SYS_MSG_INFO", "Use T to change team");
-        appendSystemMessage("SYS_MSG_INFO", "Use Q to start the game");
-        appendSystemMessage("SYS_MSG_SUCCESS", "Have fun!");
+        appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Welcome to the game");
+        appendSystemMessage(SystemMessageType.SYS_MSG_SUCCESS, "Your username is " + this.username);
+        appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Use WASD to move");
+        appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Click to shoot");
+        appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Use T to change team");
+        appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Use Q to start the game");
+        appendSystemMessage(SystemMessageType.SYS_MSG_SUCCESS, "Have fun!");
 
         // TODO: there should be a better way to do this
         return canvas;

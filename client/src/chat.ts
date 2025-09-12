@@ -1,4 +1,6 @@
-export function appendMessage(from, message) {
+import { SystemMessageType } from "./msgs";
+
+export function appendMessage(from: string, message: string) {
     const chatBox = document.getElementById("chatBox");
     if (!chatBox) return false;
 
@@ -23,16 +25,16 @@ export function appendMessage(from, message) {
     return true;
 }
 
-export function typeToString(type) {
+export function typeToString(type: SystemMessageType) {
     switch (type) {
-        case "SYS_MSG_INFO": return "info";
-        case "SYS_MSG_ERROR": return "error";
-        case "SYS_MSG_SUCCESS": return "success";
+        case SystemMessageType.SYS_MSG_INFO: return "info";
+        case SystemMessageType.SYS_MSG_ERROR: return "error";
+        case SystemMessageType.SYS_MSG_SUCCESS: return "success";
         default: return "unknown";
     }
 }
 
-export function appendSystemMessage(type, message) {
+export function appendSystemMessage(type: SystemMessageType, message: string) {
     const chatBox = document.getElementById("chatBox");
     if (!chatBox) return false;
 

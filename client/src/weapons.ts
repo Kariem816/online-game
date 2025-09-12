@@ -1,21 +1,13 @@
-import { makeEnum } from "./utils.js";
+import { TWeapon } from "./consts";
 
-export const WeaponTypes = makeEnum([
-    "WEAPON_GUN",
-    "WEAPON_BOMB",
-])
+type TWeapons = {
+    [key in TWeapon]: {
+        draw: (ctx: CanvasRenderingContext2D, color: string, cw: number, ch: number, pc: { x: number, y: number }, theta: number) => void
+    }
+}
 
-export const Weapons = {
-    /**
-     * 
-     * @param {CanvasRenderingContext2D} ctx 
-     * @param {string} color 
-     * @param {number} cw map cell width
-     * @param {number} ch map cell height
-     * @param {{x: number, y: number}} pc player center
-     * @param {number} theta player direction
-     */
-    [WeaponTypes.WEAPON_GUN]: {
+export const Weapons: TWeapons = {
+    [TWeapon.WEAPON_GUN]: {
         draw: (ctx, color, cw, ch, pc, theta) => {
             const spx = pc.x * cw; // center of the player in canvas coordinates
             const spy = pc.y * ch; // center of the player in canvas coordinates
@@ -34,7 +26,7 @@ export const Weapons = {
             ctx.stroke();
         }
     },
-    [WeaponTypes.WEAPON_BOMB]: {
+    [TWeapon.WEAPON_BOMB]: {
         draw: (ctx, color, cw, ch, pc, theta) => {
             const spx = pc.x * cw; // center of the player in canvas coordinates
             const spy = pc.y * ch; // center of the player in canvas coordinates

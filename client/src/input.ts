@@ -1,18 +1,59 @@
-import { makeEnum } from "./utils.js";
-
-export const Mouse = makeEnum([
+export enum Mouse {
     "Left",
     "Middle",
     "Right"
-]);
+};
 
 export default class Input {
-    constructor(canvas) {
+    canvas: HTMLCanvasElement;
+    mounted: boolean;
+    boundingRect: DOMRect;
+
+    // keyboard
+    keysDown: Set<string>;
+    keysPressed: Set<string>;
+    keysReleased: Set<string>;
+    _rawKeysPressed: Set<string>;
+    _rawKeysReleased: Set<string>;
+
+    // mouse
+    mouseDown: Set<Mouse>;
+    mousePressed: Set<Mouse>;
+    mouseReleased: Set<Mouse>;
+    _rawMousePressed: Set<Mouse>;
+    _rawMouseReleased: Set<Mouse>;
+
+    // Mouse Position
+    mouseX: number;
+    mouseY: number;
+    deltaX: number;
+    deltaY: number;
+    frameDeltaX: number;
+    frameDeltaY: number;
+    startX: number;
+    startY: number;
+    mouseSensitivity: number;
+
+    // Wheel
+    wheelDelta: number;
+    frameWheelDelta: number;
+    scrollSensitivity: number;
+
+    // handlers
+    handlers: {
+        keydown: (e: KeyboardEvent) => void;
+        keyup: (e: KeyboardEvent) => void;
+        mousedown: (e: MouseEvent) => void;
+        mouseup: (e: MouseEvent) => void;
+        mousemove: (e: MouseEvent) => void;
+        wheel: (e: WheelEvent) => void;
+        blur: () => void;
+    }
+
+    constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.mounted = false;
         this.boundingRect = this.canvas.getBoundingClientRect();
-        this.startX = 0;
-        this.startY = 0;
 
         // keyboard
         this.keysDown = new Set();
@@ -57,36 +98,36 @@ export default class Input {
         window.addEventListener("resize", this._resizeHandler.bind(this));
     }
 
-    _keyDownHandler(e) {
+    _keyDownHandler(e: KeyboardEvent) {
         const code = e.code;
         if (!this.keysDown.has(code)) this._rawKeysPressed.add(code);
         this.keysDown.add(code);
     }
 
-    _keyUpHandler(e) {
+    _keyUpHandler(e: KeyboardEvent) {
         const code = e.code;
         this.keysDown.delete(code);
         this._rawKeysReleased.add(code);
     }
 
-    _mouseDownHandler(e) {
+    _mouseDownHandler(e: MouseEvent) {
         const b = e.button;
         if (!this.mouseDown.has(b)) this._rawMousePressed.add(b);
         this.mouseDown.add(b);
     }
 
-    _mouseUpHandler(e) {
+    _mouseUpHandler(e: MouseEvent) {
         const b = e.button;
         this.mouseDown.delete(b);
         this._rawMouseReleased.add(b);
     }
 
-    _mouseMoveHandler(e) {
+    _mouseMoveHandler(e: MouseEvent) {
         this.frameDeltaX += e.movementX * this.mouseSensitivity;
         this.frameDeltaY += e.movementY * this.mouseSensitivity;
     }
 
-    _wheelHandler(e) {
+    _wheelHandler(e: WheelEvent) {
         this.frameWheelDelta += e.deltaY * this.scrollSensitivity;
     }
 
@@ -134,20 +175,20 @@ export default class Input {
         this.frameWheelDelta = 0;
     }
 
-    setStartPosition(x, y) {
+    setStartPosition(x: number, y: number) {
         this.startX = x * this.canvas.width / this.boundingRect.width;
         this.startY = y * this.canvas.height / this.boundingRect.height;
     }
 
     // keyboard
-    isKeyDown(code) { return this.keysDown.has(code); }
-    isKeyPressed(code) { return this.keysPressed.has(code); }
-    isKeyReleased(code) { return this.keysReleased.has(code); }
+    isKeyDown(code: string) { return this.keysDown.has(code); }
+    isKeyPressed(code: string) { return this.keysPressed.has(code); }
+    isKeyReleased(code: string) { return this.keysReleased.has(code); }
 
     // mouse
-    isMouseDown(button) { return this.mouseDown.has(button); }
-    isMousePressed(button) { return this.mousePressed.has(button); }
-    isMouseReleased(button) { return this.mouseReleased.has(button); }
+    isMouseDown(button: number) { return this.mouseDown.has(button); }
+    isMousePressed(button: number) { return this.mousePressed.has(button); }
+    isMouseReleased(button: number) { return this.mouseReleased.has(button); }
     getMousePosition() { return { x: this.mouseX, y: this.mouseY }; }
     getMouseDelta() { return { x: this.deltaX, y: this.deltaY }; }
 
@@ -158,7 +199,7 @@ export default class Input {
     addListeners() {
         if (this.mounted) return;
         for (const [event, handler] of Object.entries(this.handlers)) {
-            this.canvas.addEventListener(event, handler);
+            this.canvas.addEventListener(event as keyof HTMLElementEventMap, handler as EventListener);
         }
 
         this.mouseX = this.startX;
@@ -170,7 +211,7 @@ export default class Input {
     removeListeners() {
         if (!this.mounted) return;
         for (const [event, handler] of Object.entries(this.handlers)) {
-            this.canvas.removeEventListener(event, handler);
+            this.canvas.removeEventListener(event as keyof HTMLElementEventMap, handler as EventListener);
         }
         this.mounted = false;
     }

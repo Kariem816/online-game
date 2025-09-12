@@ -1,45 +1,59 @@
 import Input, { Mouse } from "./input.js";
 import GameMap from "./map.js";
 import Collision from "./collision.js"
-import { Weapons, WeaponTypes } from "./weapons.js";
-import { makeEnum, copyText } from "./utils.js";
+import { Weapons } from "./weapons.js";
+import { copyText } from "./utils.js";
 import { appendSystemMessage } from "./chat.js";
-import { encodeMsg } from "./msgs.js";
+import { encode, Messages, SystemMessageType, type CellResult, type ConnectedMessage, type MapMessage, type SettingsMessage, type StateMessage } from "./msgs";
+import type { Point } from "./geometry.js";
+import { Team, TWeapon } from "./consts.js";
 
 // Game States
-const GamePhases = makeEnum([
-    "WaitingForPlayers",
-    "GettingReady",
-    "Playing",
-    "GameOver",
-]);
-
-// Teams
-const Teams = makeEnum([
-    "TeamA",
-    "TeamB",
-]);
+enum GamePhases {
+    WaitingForPlayers,
+    GettingReady,
+    Playing,
+    GameOver,
+};
 
 // Tile Types
-const Tiles = makeEnum([
-    "EmptyTile",
-    "TeamATile",
-    "TeamBTile",
-    "WallTile",
-]);
+enum Tiles {
+    EmptyTile,
+    TeamATile,
+    TeamBTile,
+    WallTile,
+};
+
+type GameExtras = ConnectedMessage & {
+    settings: SettingsMessage,
+};
 
 export default class Game {
     isServerUpdated = false;
-    constructor(ws, renderer, extras) {
+
+    ctx: CanvasRenderingContext2D;
+
+    debugFrame: boolean;
+
+    input: Input;
+
+    game: StateMessage;
+    map: GameMap;
+
+    settings: SettingsMessage;
+
+    myData: ConnectedMessage;
+
+    constructor(public ws: WebSocket, public renderer: HTMLCanvasElement, extras: GameExtras) {
         this.ws = ws;
         this.renderer = renderer;
-        this.ctx = renderer.getContext("2d"); // shouldn't fail ?!
+        this.ctx = renderer.getContext("2d")!; // shouldn't fail ?!
 
         this.debugFrame = false;
 
         this.input = new Input(renderer);
 
-        this.game = {};
+        this.game = { host: 0, players: [], room: "", state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0, teamA: 0, teamB: 0 } };
         this.map = new GameMap();
 
         const { settings, ...myData } = extras;
@@ -50,7 +64,7 @@ export default class Game {
         document.addEventListener("pointerlockchange", this.onLockChangeAlert.bind(this), false);
     }
 
-    async onClickLockPointer(e) {
+    async onClickLockPointer(e: MouseEvent) {
         if (document.pointerLockElement === this.renderer) return;
         await this.renderer.requestPointerLock();
         this.input.setStartPosition(e.offsetX, e.offsetY);
@@ -68,20 +82,20 @@ export default class Game {
         }
     }
 
-    onStateUpdate(state) {
+    onStateUpdate(state: StateMessage) {
         this.game = state;
         this.isServerUpdated = true;
     }
 
-    onMapUpdate(map) {
+    onMapUpdate(map: MapMessage) {
         this.map = GameMap.fromMapMessage(map);
     }
 
-    onShot(cells) {
+    onShot(cells: CellResult[]) {
         this.map.setTiles(cells);
     }
 
-    canvasToGameCoords({ x, y }) {
+    canvasToGameCoords({ x, y }: Point) {
         const { width, height } = this.renderer;
         const wOffset = width * 0.1;
         const wRest = width - wOffset;
@@ -94,7 +108,7 @@ export default class Game {
         return { x: gx, y: gy };
     }
 
-    gameCoordsToCanvas({ x, y }) {
+    gameCoordsToCanvas({ x, y }: Point) {
         const { width, height } = this.renderer;
         const wOffset = width * 0.1;
         const wRest = width - wOffset;
@@ -108,10 +122,10 @@ export default class Game {
     }
 
     getMyPlayer() {
-        return this.game.players.find((p) => p.user.id === this.myData.id);
+        return this.game.players.find((p) => p.user.id === this.myData.id)!;
     }
 
-    update(dt) {
+    update(dt: number) {
         // Logging
         if (this.debugFrame) {
             console.log({ state: this.game, serverUpdated: this.isServerUpdated });
@@ -121,8 +135,8 @@ export default class Game {
         // Players State
         if (this.game.state.phase === GamePhases.Playing && !this.isServerUpdated) {
             for (const player of this.game.players) {
-                let newX = player.x + player.vx * dt * this.settings.movementSpeed;
-                let newY = player.y + player.vy * dt * this.settings.movementSpeed;
+                let newX = player.x + player.vx * dt * this.settings.playerSpeed;
+                let newY = player.y + player.vy * dt * this.settings.playerSpeed;
 
                 const { tile, bottom, right, bottomRight } = this.map.getAround(Math.floor(newX), Math.floor(newY));
                 const cornerX = newX - Math.floor(newX) > 0;
@@ -158,6 +172,10 @@ export default class Game {
                 if (player.cooldown > 0) {
                     // TODO: consider making player cooldown not a percentage
                     const playerWeapon = this.settings.weapons.find((w) => w.id === player.weapon);
+                    if (!playerWeapon) {
+                        console.error("Invalid player weapon", player.weapon, this.settings.weapons);
+                        continue;
+                    }
                     const cooldownTime = player.cooldown * playerWeapon.cooldown / 100 - dt * 1000;
                     player.cooldown = Math.max(0, cooldownTime) / playerWeapon.cooldown * 100;
                 }
@@ -173,8 +191,8 @@ export default class Game {
             // Movement
             if (this.input.isKeyPressed("KeyW")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "up",
                             start: true,
@@ -184,8 +202,8 @@ export default class Game {
             }
             if (this.input.isKeyReleased("KeyW")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "up",
                             start: false,
@@ -196,8 +214,8 @@ export default class Game {
 
             if (this.input.isKeyPressed("KeyS")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "down",
                             start: true,
@@ -207,8 +225,8 @@ export default class Game {
             }
             if (this.input.isKeyReleased("KeyS")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "down",
                             start: false,
@@ -219,8 +237,8 @@ export default class Game {
 
             if (this.input.isKeyPressed("KeyA")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "left",
                             start: true,
@@ -230,8 +248,8 @@ export default class Game {
             }
             if (this.input.isKeyReleased("KeyA")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "left",
                             start: false,
@@ -242,8 +260,8 @@ export default class Game {
 
             if (this.input.isKeyPressed("KeyD")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "right",
                             start: true,
@@ -253,8 +271,8 @@ export default class Game {
             }
             if (this.input.isKeyReleased("KeyD")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_MOVE",
+                    encode({
+                        type: Messages.MSG_MOVE,
                         data: {
                             direction: "right",
                             start: false,
@@ -266,20 +284,20 @@ export default class Game {
             // Weapons
             if (this.input.isKeyReleased("Digit1")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_WEAPON",
+                    encode({
+                        type: Messages.MSG_WEAPON,
                         data: {
-                            weapon: WeaponTypes.WEAPON_GUN,
+                            weapon: TWeapon.WEAPON_GUN,
                         },
                     })
                 );
             }
             if (this.input.isKeyReleased("Digit2")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_WEAPON",
+                    encode({
+                        type: Messages.MSG_WEAPON,
                         data: {
-                            weapon: WeaponTypes.WEAPON_BOMB,
+                            weapon: TWeapon.WEAPON_BOMB,
                         },
                     })
                 );
@@ -290,8 +308,9 @@ export default class Game {
                 const myPlayer = this.getMyPlayer();
                 if (myPlayer.cooldown <= 0) {
                     this.ws.send(
-                        encodeMsg({
-                            type: "MSG_SHOOT",
+                        encode({
+                            type: Messages.MSG_SHOOT,
+                            data: {},
                         })
                     );
                 }
@@ -303,8 +322,8 @@ export default class Game {
             const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());
 
             this.ws.send(
-                encodeMsg({
-                    type: "MSG_MOUSE",
+                encode({
+                    type: Messages.MSG_MOUSE,
                     data: gameCoords,
                 })
             );
@@ -314,15 +333,17 @@ export default class Game {
             // Menu
             if (this.input.isKeyReleased("KeyQ")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_START",
+                    encode({
+                        type: Messages.MSG_START,
+                        data: {},
                     })
                 );
             }
             if (this.input.isKeyReleased("KeyT")) {
                 this.ws.send(
-                    encodeMsg({
-                        type: "MSG_TEAM",
+                    encode({
+                        type: Messages.MSG_TEAM,
+                        data: {},
                     })
                 );
             }
@@ -355,7 +376,7 @@ export default class Game {
             this.ctx.fillRect(0, 0, wOffset, hOffset);
             if (this.input.isMouseReleased(Mouse.Left)) {
                 copyText(this.game.room);
-                appendSystemMessage("SYS_MSG_INFO", "Copied room code to clipboard");
+                appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Copied room code to clipboard");
             }
         }
         this.ctx.fillStyle = "#f0f0f0";
@@ -365,10 +386,10 @@ export default class Game {
         this.ctx.fillText(`Room: ${this.game.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
 
         // Top bar
-        let timeLeft;
+        let timeLeft: number;
         if (this.game.state.phase === GamePhases.Playing || this.game.state.phase === GamePhases.GettingReady) {
-            const start = this.game.startedAt;
-            const now = new Date();
+            const start = this.game.startedAt?.getTime() ?? 0;
+            const now = Date.now();
             timeLeft = this.settings.gameLength - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
             if (timeLeft < 0) {
@@ -396,8 +417,8 @@ export default class Game {
         this.ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
 
         // Teams
-        const teamA = this.game.players.filter((p) => p.team === Teams.TeamA);
-        const teamB = this.game.players.filter((p) => p.team === Teams.TeamB);
+        const teamA = this.game.players.filter((p) => p.team === Team.TeamA);
+        const teamB = this.game.players.filter((p) => p.team === Team.TeamB);
         const squareSize = wOffset - 20;
 
         // team A
@@ -526,7 +547,7 @@ export default class Game {
                 const y = me.y + mapHeightOffset;
                 this.ctx.fillStyle = "#f0f0f0";
                 this.ctx.textAlign = "center";
-                const secs = Math.floor((timeLeft - this.settings.gameLength) / 1000);
+                const secs = Math.floor((timeLeft! - this.settings.gameLength) / 1000);
                 this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
@@ -570,7 +591,7 @@ export default class Game {
         this.ctx.stroke();
     }
 
-    getUsername(id) {
+    getUsername(id: number) {
         for (const player of this.game.players) {
             if (player.user.id === id) {
                 return player.user.username;

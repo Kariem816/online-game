@@ -1,4 +1,6 @@
-import Application from "./app.js";
+import './style.css'
+
+import Application from "./app";
 
 function main() {
     new Application();
