@@ -1,10 +1,12 @@
-const Mouse = enumJS([
+import { makeEnum } from "./utils.js";
+
+export const Mouse = makeEnum([
     "Left",
     "Middle",
     "Right"
 ]);
 
-class Input {
+export default class Input {
     constructor(canvas) {
         this.canvas = canvas;
         this.mounted = false;

@@ -1,0 +1,52 @@
+export function appendMessage(from, message) {
+    const chatBox = document.getElementById("chatBox");
+    if (!chatBox) return false;
+
+    const chatMessage = document.createElement("p");
+    chatMessage.classList.add("chat-message");
+    chatBox.appendChild(chatMessage);
+
+    const sender = document.createElement("span");
+    sender.textContent = from;
+    sender.classList.add("chat-sender");
+    chatMessage.appendChild(sender);
+
+    const space = document.createTextNode(" ");
+    chatMessage.appendChild(space);
+
+    const msg = document.createElement("span");
+    msg.textContent = message;
+    msg.classList.add("chat-text");
+    chatMessage.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    return true;
+}
+
+export function typeToString(type) {
+    switch (type) {
+        case "SYS_MSG_INFO": return "info";
+        case "SYS_MSG_ERROR": return "error";
+        case "SYS_MSG_SUCCESS": return "success";
+        default: return "unknown";
+    }
+}
+
+export function appendSystemMessage(type, message) {
+    const chatBox = document.getElementById("chatBox");
+    if (!chatBox) return false;
+
+    const chatMessage = document.createElement("div");
+    const t = typeToString(type);
+    chatMessage.classList.add("chat-message", t);
+    chatBox.appendChild(chatMessage);
+
+    const msg = document.createElement("span");
+    msg.textContent = message;
+    msg.classList.add("chat-text");
+    chatMessage.appendChild(msg);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    return true;
+}

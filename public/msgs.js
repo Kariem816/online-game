@@ -1,5 +1,7 @@
+import { makeEnum } from "./utils.js";
+
 // messages
-const Messages = enumJS([
+const Messages = makeEnum([
     "MSG_CNCT",
     "MSG_HOST",
     "MSG_HOSTED",
@@ -27,7 +29,7 @@ const Messages = enumJS([
 ]);
 
 // system messages
-const SystemMessages = enumJS([
+const SystemMessages = makeEnum([
     "SYS_MSG_INFO",
 ]);
 
@@ -74,7 +76,7 @@ function getString(data, length, state) {
  * 
  * @param {ArrayBuffer} msg 
  */
-function decodeMsg(msg) {
+export function decodeMsg(msg) {
     const type = new Uint8Array(msg, 0)[0];
     if (!type in Messages) {
         return null;
@@ -215,7 +217,7 @@ function decodeMsg(msg) {
  * 
  * @param {{type: string, data: any}} msg
  */
-function encodeMsg(msg) {
+export function encodeMsg(msg) {
     const type = Messages[msg.type];
     if (!type) {
         throw new Error("Unknown message type", msg.type)

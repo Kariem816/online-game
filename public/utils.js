@@ -1,5 +1,5 @@
 // enums helper
-function enumJS(members) {
+export function makeEnum(members) {
     const container = {};
     for (let i = 0; i < members.length; i++) {
         const name = members[i];
@@ -8,15 +8,15 @@ function enumJS(members) {
     return container;
 }
 
-async function sleep(ms) {
+export async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function clamp(val, b, t) {
+export function clamp(val, b, t) {
     return Math.min(t, Math.max(val, b));
 }
 
-function copyText(text) {
+export function copyText(text) {
     if (!navigator.clipboard) return;
     navigator.clipboard.writeText(text);
 }
