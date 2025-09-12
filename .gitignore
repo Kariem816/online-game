@@ -3,3 +3,5 @@ public/playground.*
 performance/
 
 build/
+
+tmp/
