@@ -504,16 +504,21 @@ class Game {
             const now = new Date();
             timeLeft = this.settings.gameLength - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
-            if (timeLeft <= 0) {
-                this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
+            if (timeLeft < 0) {
+                this.ctx.fillText("00:00", wOffset + wRest / 2, hOffset / 2);
             } else {
                 const minutes = Math.floor(timeLeft / 1000 / 60).toString().padStart(2, "0");
-                const seconds = (Math.floor(timeLeft / 1000) % 60).toString().padStart(2, "0");
+                const seconds = Math.floor(timeLeft / 1000 % 60).toString().padStart(2, "0");
                 this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
             }
+        } else if (this.game.state.phase === GamePhases.GameOver) {
+            this.ctx.fillStyle = "#f0f0f0";
+            this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
         } else {
             this.ctx.fillStyle = "#f0f0f0";
-            this.ctx.fillText("01:00", width / 2, hOffset / 2);
+            const minutes = Math.floor(this.settings.gameLength / 1000 / 60).toString().padStart(2, "0");
+            const seconds = Math.floor(this.settings.gameLength / 1000 % 60).toString().padStart(2, "0");
+            this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
         }
 
         // Sidebar
@@ -654,7 +659,7 @@ class Game {
                 const y = me.y + mapHeightOffset;
                 this.ctx.fillStyle = "#f0f0f0";
                 this.ctx.textAlign = "center";
-                const secs = Math.ceil((timeLeft - this.settings.gameLength) / 1000);
+                const secs = Math.floor((timeLeft - this.settings.gameLength) / 1000);
                 this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
