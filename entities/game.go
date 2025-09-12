@@ -78,10 +78,20 @@ func (g *Game) AddUser(user *User) error {
 		return errors.New("game has already started")
 	}
 	var newTeam types.TeamID
-	if len(g.Players)&1 == 0 { // even number of players
-		newTeam = TeamA
-	} else {
+
+	teamA := 0
+	teamB := 0
+	for _, player := range g.Players {
+		if player.Team == TeamA {
+			teamA++
+		} else {
+			teamB++
+		}
+	}
+	if teamA > teamB {
 		newTeam = TeamB
+	} else {
+		newTeam = TeamA
 	}
 
 	player := user.ToPlayer(newTeam)
