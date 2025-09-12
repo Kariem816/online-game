@@ -1,5 +1,5 @@
 // messages
-const MESSAGES = enumJS({}, [
+const Messages = enumJS([
     "MSG_CNCT",
     "MSG_HOST",
     "MSG_HOSTED",
@@ -27,7 +27,7 @@ const MESSAGES = enumJS({}, [
 ]);
 
 // system messages
-const SYSTEM_MESSAGES = enumJS({}, [
+const SystemMessages = enumJS([
     "SYS_MSG_INFO",
 ]);
 
@@ -76,7 +76,7 @@ function getString(data, length, state) {
  */
 function decodeMsg(msg) {
     const type = new Uint8Array(msg, 0)[0];
-    if (!type in MESSAGES) {
+    if (!type in Messages) {
         return null;
     }
 
@@ -84,7 +84,7 @@ function decodeMsg(msg) {
     const state = { i: 0 };
     const data = {};
 
-    switch (MESSAGES[type]) {
+    switch (Messages[type]) {
         case "MSG_CNCT":
             data.id = getInt16(view, state);
             const usernameLen = getUint8(view, state);
@@ -176,8 +176,8 @@ function decodeMsg(msg) {
         } break;
         case "MSG_SYSTEM":
             const sysType = getUint8(view, state);
-            if (sysType in SYSTEM_MESSAGES) {
-                data.type = SYSTEM_MESSAGES[sysType];
+            if (sysType in SystemMessages) {
+                data.type = SystemMessages[sysType];
             } else {
                 throw new Error("Unknown System Message " + sysType);
             }
@@ -200,11 +200,11 @@ function decodeMsg(msg) {
         case "MSG_SHOOT":
         case "MSG_CHAT":
         case "MSG_MOUSE":
-            throw new Error("Not Recivable " + MESSAGES[type]);
+            throw new Error("Not Recivable " + Messages[type]);
     }
 
     return {
-        type: MESSAGES[type],
+        type: Messages[type],
         data,
     };
 }
@@ -216,7 +216,7 @@ function decodeMsg(msg) {
  * @param {{type: string, data: any}} msg
  */
 function encodeMsg(msg) {
-    const type = MESSAGES[msg.type];
+    const type = Messages[msg.type];
     if (!type) {
         throw new Error("Unknown message type", msg.type)
     }

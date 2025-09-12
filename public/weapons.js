@@ -1,4 +1,4 @@
-const Weapons = enumJS({}, [
+const Weapons = enumJS([
     "WEAPON_GUN",
     "WEAPON_BOMB",
 ])

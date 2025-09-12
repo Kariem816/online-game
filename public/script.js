@@ -1,7 +1,7 @@
 const root = document.getElementById("root");
 
 // Game States
-const GAME_PHASES = enumJS({}, [
+const GamePhases = enumJS([
     "WaitingForPlayers",
     "GettingReady",
     "Playing",
@@ -9,13 +9,13 @@ const GAME_PHASES = enumJS({}, [
 ])
 
 // Teams
-const TEAM_ID = enumJS({}, [
+const Teams = enumJS([
     "TeamA",
     "TeamB",
 ])
 
 // Tile Types
-const Tiles = enumJS({}, [
+const Tiles = enumJS([
     "EmptyTile",
     "TeamATile",
     "TeamBTile",
@@ -23,13 +23,10 @@ const Tiles = enumJS({}, [
 ]);
 
 // Screens
-const Screens = enumJS({}, [
+const Screens = enumJS([
     "Home",
     "Game",
 ])
-
-// use for debugging
-let one = false;
 
 function appendMessage(from, message) {
     const chatBox = document.getElementById("chatBox");
@@ -164,68 +161,6 @@ class GameMap {
     }
 }
 
-class Mouse {
-    #xLimit = Infinity;
-    #yLimit = Infinity;
-    #lastState = false;
-    #justChanged = true;
-
-    constructor(x, y, down = false) {
-        this.x = x;
-        this.y = y;
-        this.state = down;
-    }
-
-    setLimits(x, y) {
-        this.#xLimit = x;
-        this.#yLimit = y;
-    }
-
-    translate(dx, dy) {
-        this.x = clamp(this.x + dx, 0, this.#xLimit);
-        this.y = clamp(this.y + dy, 0, this.#yLimit);
-    }
-
-    moveTo(x, y) {
-        this.x = clamp(x, 0, this.#xLimit);
-        this.y = clamp(y, 0, this.#yLimit);
-    }
-
-    up() {
-        this.#lastState = this.state;
-        this.state = false;
-        this.#justChanged = true;
-    }
-
-    down() {
-        this.#lastState = this.state;
-        this.state = true;
-        this.#justChanged = true;
-    }
-
-    // currently down
-    isDown() {
-        return this.state;
-    }
-
-    // first frame to be down
-    isClicked() {
-        return this.state && !this.#lastState;
-    }
-
-    isInside(x1, y1, x2, y2) {
-        return (this.x >= x1 && this.x <= x2) && (this.y >= y1 && this.y <= y2);
-    }
-
-    update() {
-        if (this.#justChanged) {
-            this.#justChanged = false;
-            return;
-        }
-        this.#lastState = this.state;
-    }
-}
-
 class Game {
     isServerUpdated = false;
     constructor(ws, renderer, extras) {
@@ -233,221 +168,41 @@ class Game {
         this.renderer = renderer;
         this.ctx = renderer.getContext("2d"); // shouldn't fail ?!
 
-        this.mouse = new Mouse(renderer.width / 2, renderer.height / 2);
-        this.mouse.setLimits(this.renderer.width, this.renderer.height);
+        this.debugFrame = false;
 
-        this.state = {};
+        this.input = new Input(renderer);
+
+        this.game = {};
         this.map = new GameMap();
-        
+
         const { settings, ...myData } = extras;
         this.settings = settings;
         this.myData = myData;
 
-        this.mmcb = this.onMouseMove.bind(this);
-        this.lpcb = this.onClickLockPointer.bind(this);
-        this.mdcb = this.onMouseDown.bind(this);
-        this.mucb = this.onMouseUp.bind(this);
-        this.setupControls();
-    }
-
-    setupControls() {
-        this.renderer.addEventListener("keydown", (e) => {
-            if (e.repeat) return;
-            switch (e.code) {
-                case "KeyW": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "up",
-                                    start: true,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyS": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "down",
-                                    start: true,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyA": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "left",
-                                    start: true,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyD": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "right",
-                                    start: true,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyQ": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_START",
-                            })
-                        );
-                } break;
-                case "KeyT": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_TEAM",
-                            })
-                        );
-                } break;
-                case "KeyR": {
-                        one = true;
-                } break;
-            }
-        });
-
-        this.renderer.addEventListener("keyup", (e) => {
-            if (e.repeat) return;
-            switch (e.code) {
-                case "KeyW": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "up",
-                                    start: false,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyS": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "down",
-                                    start: false,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyA": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "left",
-                                    start: false,
-                                },
-                            })
-                        );
-                } break;
-                case "KeyD": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_MOVE",
-                                data: {
-                                    direction: "right",
-                                    start: false,
-                                },
-                            })
-                        );
-                } break;
-                case "Digit1": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_WEAPON",
-                                data: {
-                                    weapon: Weapons.WEAPON_GUN,
-                                },
-                            })
-                        );
-                } break;
-                case "Digit2": {
-                        this.ws.send(
-                            encodeMsg({
-                                type: "MSG_WEAPON",
-                                data: {
-                                    weapon: Weapons.WEAPON_BOMB,
-                                },
-                            })
-                        );
-                } break;
-            }
-        });
-
-        const canvas = this.renderer;
-        canvas.addEventListener("click", this.lpcb);
-        canvas.addEventListener("mousemove", this.mmcb);
-        canvas.addEventListener("mousedown", this.mdcb);
-        canvas.addEventListener("mouseup", this.mucb);
+        renderer.addEventListener("click", this.onClickLockPointer.bind(this));
         document.addEventListener("pointerlockchange", this.onLockChangeAlert.bind(this), false);
     }
 
-    async onClickLockPointer() {
+    async onClickLockPointer(e) {
         if (document.pointerLockElement === this.renderer) return;
         await this.renderer.requestPointerLock();
-    }
-    
-    onMouseDown() {
-        if (document.pointerLockElement !== this.renderer) return;
-        this.mouse.down();
-    }
-
-    onMouseUp() {
-        if (document.pointerLockElement !== this.renderer) return;
-        this.mouse.up();
+        this.input.setStartPosition(e.offsetX, e.offsetY);
     }
 
     gameStarted() {
-        return this.state.state.phase === GAME_PHASES.GettingReady || this.state.state.phase === GAME_PHASES.Playing;
-    }
-
-    onMouseMove(e) {
-        if (document.pointerLockElement !== this.renderer) return;
-        this.mouse.translate(e.movementX, e.movementY);
-
-        // TODO: this should be moved into update function
-        // at the same time it is a waste to send pointer location every frame
-        // this is a problem for future me
-        if (this.gameStarted()) {
-            const { x, y } = this.canvasToGameCoords(this.mouse);
-
-            this.ws.send(
-                encodeMsg({
-                    type: "MSG_MOUSE",
-                    data: { x, y },
-                })
-            );
-        }
+        return this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing;
     }
 
     onLockChangeAlert() {
         if (document.pointerLockElement === this.renderer) {
-            if (this.gameStarted()) {
-                const myPlayer = this.getMyPlayer();
-                const { x, y } = this.gameCoordsToCanvas({ x: myPlayer.x, y: myPlayer.y })
-                this.mouse.moveTo(x, y);
-            } else {
-                this.mouse.moveTo(this.renderer.width / 2, this.renderer.height / 2 );
-            }
+            this.input.addListeners();
+        } else {
+            this.input.removeListeners();
         }
     }
 
     onStateUpdate(state) {
-        this.state = state;
+        this.game = state;
         this.isServerUpdated = true;
     }
 
@@ -486,19 +241,19 @@ class Game {
     }
 
     getMyPlayer() {
-        return this.state.players.find((p) => p.user.id === this.myData.id);
+        return this.game.players.find((p) => p.user.id === this.myData.id);
     }
 
     update(dt) {
         // Logging
-        if (one) {
-            console.log({ state: this.state, serverUpdated: this.isServerUpdated });
-            one = false;
+        if (this.debugFrame) {
+            console.log({ state: this.game, serverUpdated: this.isServerUpdated });
+            this.debugFrame = false;
         }
 
         // Players State
-        if (this.state.state.phase === GAME_PHASES.Playing && !this.isServerUpdated) {
-            for (const player of this.state.players) {
+        if (this.game.state.phase === GamePhases.Playing && !this.isServerUpdated) {
+            for (const player of this.game.players) {
                 let newX = player.x + player.vx * dt * this.settings.movementSpeed;
                 let newY = player.y + player.vy * dt * this.settings.movementSpeed;
 
@@ -544,22 +299,171 @@ class Game {
             this.isServerUpdated = false;
         }
 
-        // Mouse
-        this.mouse.update();
-        if (this.mouse.isClicked() && this.mouse.isInside(0, 0, this.renderer.width * 0.1, this.renderer.height * 0.1)) {
-            // copy room code
-            copyText(this.state.room);
-            appendSystemMessage("SYS_MSG_INFO", "Copied room code to clipboard");
-        }
-        if (this.mouse.isDown() && this.gameStarted()) {
-            const myPlayer = this.getMyPlayer();
-            if (myPlayer.cooldown <= 0) {
+        // Input
+        this.input.update();
+
+        if (this.game.state.phase === GamePhases.Playing) {
+            // Movement
+            if (this.input.isKeyPressed("KeyW")) {
                 this.ws.send(
                     encodeMsg({
-                        type: "MSG_SHOOT",
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "up",
+                            start: true,
+                        },
                     })
                 );
             }
+            if (this.input.isKeyReleased("KeyW")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "up",
+                            start: false,
+                        },
+                    })
+                );
+            }
+
+            if (this.input.isKeyPressed("KeyS")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "down",
+                            start: true,
+                        },
+                    })
+                );
+            }
+            if (this.input.isKeyReleased("KeyS")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "down",
+                            start: false,
+                        },
+                    })
+                );
+            }
+
+            if (this.input.isKeyPressed("KeyA")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "left",
+                            start: true,
+                        },
+                    })
+                );
+            }
+            if (this.input.isKeyReleased("KeyA")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "left",
+                            start: false,
+                        },
+                    })
+                );
+            }
+
+            if (this.input.isKeyPressed("KeyD")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "right",
+                            start: true,
+                        },
+                    })
+                );
+            }
+            if (this.input.isKeyReleased("KeyD")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_MOVE",
+                        data: {
+                            direction: "right",
+                            start: false,
+                        },
+                    })
+                );
+            }
+
+            // Weapons
+            if (this.input.isKeyReleased("Digit1")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_WEAPON",
+                        data: {
+                            weapon: Weapons.WEAPON_GUN,
+                        },
+                    })
+                );
+            }
+            if (this.input.isKeyReleased("Digit2")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_WEAPON",
+                        data: {
+                            weapon: Weapons.WEAPON_BOMB,
+                        },
+                    })
+                );
+            }
+
+            // Shooting
+            if (this.input.isMouseDown(Mouse.Left)) {
+                const myPlayer = this.getMyPlayer();
+                if (myPlayer.cooldown <= 0) {
+                    this.ws.send(
+                        encodeMsg({
+                            type: "MSG_SHOOT",
+                        })
+                    );
+                }
+            }
+        }
+
+        if (this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing) {
+            // Aiming
+            const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());
+
+            this.ws.send(
+                encodeMsg({
+                    type: "MSG_MOUSE",
+                    data: gameCoords,
+                })
+            );
+        }
+
+        if (this.game.state.phase === GamePhases.WaitingForPlayers || this.game.state.phase === GamePhases.GameOver) {
+            // Menu
+            if (this.input.isKeyReleased("KeyQ")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_START",
+                    })
+                );
+            }
+            if (this.input.isKeyReleased("KeyT")) {
+                this.ws.send(
+                    encodeMsg({
+                        type: "MSG_TEAM",
+                    })
+                );
+            }
+        }
+
+        // Debug
+        if (this.input.isKeyReleased("KeyR")) {
+            this.debugFrame = true;
         }
     }
 
@@ -569,8 +473,8 @@ class Game {
         const wRest = width - wOffset;
         const hOffset = height * 0.1;
         const hRest = height - hOffset;
-        const teamAColor = "#" + this.state.state.teamA.toString(16).padStart(6, "0");
-        const teamBColor = "#" + this.state.state.teamB.toString(16).padStart(6, "0");
+        const teamAColor = "#" + this.game.state.teamA.toString(16).padStart(6, "0");
+        const teamBColor = "#" + this.game.state.teamB.toString(16).padStart(6, "0");
 
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
@@ -579,20 +483,24 @@ class Game {
         this.ctx.fillRect(0, 0, width, height);
 
         // Top Left Corner
-        if (this.mouse.isInside(0, 0, wOffset, hOffset)) {
+        if (Collision.pointRect(this.input.getMousePosition(), { x: 0, y: 0, w: wOffset, h: hOffset })) {
             this.ctx.fillStyle = "#555555"
             this.ctx.fillRect(0, 0, wOffset, hOffset);
+            if (this.input.isMouseReleased(Mouse.Left)) {
+                copyText(this.game.room);
+                appendSystemMessage("SYS_MSG_INFO", "Copied room code to clipboard");
+            }
         }
         this.ctx.fillStyle = "#f0f0f0";
         this.ctx.font = "30px Arial";
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "middle";
-        this.ctx.fillText(`Room: ${this.state.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
+        this.ctx.fillText(`Room: ${this.game.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
 
         // Top bar
         let timeLeft;
-        if (this.state.state.phase === GAME_PHASES.Playing || this.state.state.phase === GAME_PHASES.GettingReady) {
-            const start = this.state.startedAt;
+        if (this.game.state.phase === GamePhases.Playing || this.game.state.phase === GamePhases.GettingReady) {
+            const start = this.game.startedAt;
             const now = new Date();
             timeLeft = this.settings.gameLength - (now - start);
             this.ctx.fillStyle = "#f0f0f0";
@@ -611,13 +519,13 @@ class Game {
         // Sidebar
         const sidebarCenter = hOffset + hRest / 2;
         // score
-        const score = this.state.state.phase === GAME_PHASES.WaitingForPlayers ? "-" : `${this.state.state.scoreA} - ${this.state.state.scoreB}`;
+        const score = this.game.state.phase === GamePhases.WaitingForPlayers ? "-" : `${this.game.state.scoreA} - ${this.game.state.scoreB}`;
         this.ctx.fillStyle = "#f0f0f0";
         this.ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
 
         // Teams
-        const teamA = this.state.players.filter((p) => p.team === TEAM_ID.TeamA);
-        const teamB = this.state.players.filter((p) => p.team === TEAM_ID.TeamB);
+        const teamA = this.game.players.filter((p) => p.team === Teams.TeamA);
+        const teamB = this.game.players.filter((p) => p.team === Teams.TeamB);
         const squareSize = wOffset - 20;
 
         // team A
@@ -668,14 +576,14 @@ class Game {
             }
 
             // Render players
-            for (const player of this.state.players) {
+            for (const player of this.game.players) {
                 const x = player.x + mapWidthOffset;
                 const y = player.y + mapHeightOffset;
                 const color = player.team === 0 ? teamAColor : teamBColor;
 
-                const ringColor = player.user.id === this.state.host ?
+                const ringColor = player.user.id === this.game.host ?
                     "#fcbe03" : "#ffffff";
-                const withRing = player.user.id === this.state.host || player.user.id === this.myData.id;
+                const withRing = player.user.id === this.game.host || player.user.id === this.myData.id;
 
                 // ring
                 this.ctx.fillStyle = color;
@@ -728,7 +636,7 @@ class Game {
 
                     this.ctx.stroke();
                 }
-                
+
                 // render player weapon
                 DrawWeapon[player.weapon](
                     this.ctx,
@@ -740,7 +648,7 @@ class Game {
                 );
             }
 
-            if (this.state.state.phase === GAME_PHASES.GettingReady) {
+            if (this.game.state.phase === GamePhases.GettingReady) {
                 const me = this.getMyPlayer();
                 const x = me.x + mapWidthOffset;
                 const y = me.y + mapHeightOffset;
@@ -752,13 +660,13 @@ class Game {
         } else {
             this.ctx.fillStyle = "#353535";
             this.ctx.font = "60px Arial";
-            switch (this.state.state.phase) {
-                case GAME_PHASES.WaitingForPlayers: {
+            switch (this.game.state.phase) {
+                case GamePhases.WaitingForPlayers: {
                     this.ctx.fillText("Waiting for players", width / 2, hOffset + hRest / 2);
                 } break;
-                case GAME_PHASES.GameOver: {
-                    const winner = this.state.state.scoreA > this.state.state.scoreB ? "Team A Wins"
-                        : this.state.state.scoreA === this.state.state.scoreB ? "It's a Tie" : "Team B Wins";
+                case GamePhases.GameOver: {
+                    const winner = this.game.state.scoreA > this.game.state.scoreB ? "Team A Wins"
+                        : this.game.state.scoreA === this.game.state.scoreB ? "It's a Tie" : "Team B Wins";
                     this.ctx.fillText(`Game Over! ${winner}`, width / 2, hOffset + hRest / 2);
                 } break;
             }
@@ -769,28 +677,29 @@ class Game {
 
     crosshair() {
         const radius = 10;
+        const { x, y } = this.input.getMousePosition();
 
         this.ctx.fillStyle = "#353535";
         this.ctx.beginPath();
-        this.ctx.arc(this.mouse.x, this.mouse.y, radius, 0, 2 * Math.PI);
+        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
         this.ctx.fill();
 
         this.ctx.strokeStyle = "red";
         this.ctx.lineWidth = 3;
-        this.ctx.moveTo(this.mouse.x - radius, this.mouse.y);
-        this.ctx.lineTo(this.mouse.x + radius, this.mouse.y);
-        this.ctx.moveTo(this.mouse.x, this.mouse.y - radius);
-        this.ctx.lineTo(this.mouse.x, this.mouse.y + radius);
+        this.ctx.moveTo(x - radius, y);
+        this.ctx.lineTo(x + radius, y);
+        this.ctx.moveTo(x, y - radius);
+        this.ctx.lineTo(x, y + radius);
         this.ctx.stroke();
 
         this.ctx.strokeStyle = "#f0f0f0";
         this.ctx.beginPath();
-        this.ctx.arc(this.mouse.x, this.mouse.y, radius, 0, 2 * Math.PI);
+        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
         this.ctx.stroke();
     }
 
     getUsername(id) {
-        for (const player of this.state.players) {
+        for (const player of this.game.players) {
             if (player.user.id === id) {
                 return player.user.username;
             }
@@ -1000,64 +909,64 @@ class Application {
             const msg = decodeMsg(event.data);
             switch (msg.type) {
                 case "MSG_CNCT": {
-                        this.myId = msg.data.id;
-                        this.myUsername = msg.data.username;
-                        this.react.updateUsername(this.myUsername);
+                    this.myId = msg.data.id;
+                    this.myUsername = msg.data.username;
+                    this.react.updateUsername(this.myUsername);
                 } break;
                 case "MSG_SETTINGS": {
                     this.settings = msg.data;
                 } break;
                 case "MSG_HOSTED":
                 case "MSG_JOINED": {
-                        const canvas = this.react.GameScreen();
-                        this.game = new Game(ws, canvas, {
-                            id: this.myId,
-                            username: this.myUsername,
-                            settings: this.settings,
-                        });
+                    const canvas = this.react.GameScreen();
+                    this.game = new Game(ws, canvas, {
+                        id: this.myId,
+                        username: this.myUsername,
+                        settings: this.settings,
+                    });
                 } break;
                 case "MSG_STATE": {
-                        if (this.react.active !== Screens.Game) {
-                            console.error("should be unreachable");
-                        }
-                        if (!this.game) {
-                            console.error("should be unreachable");
-                            return;
-                        }
+                    if (this.react.active !== Screens.Game) {
+                        console.error("should be unreachable");
+                    }
+                    if (!this.game) {
+                        console.error("should be unreachable");
+                        return;
+                    }
 
-                        this.game.onStateUpdate(msg.data);
-                        if (!this.rendering) {
-                            this.rendering = true;
-                            requestAnimationFrame((timestamp) => {
-                                this.lastTimestamp = timestamp;
-                                this.tick(timestamp);
-                            });
-                        }
+                    this.game.onStateUpdate(msg.data);
+                    if (!this.rendering) {
+                        this.rendering = true;
+                        requestAnimationFrame((timestamp) => {
+                            this.lastTimestamp = timestamp;
+                            this.tick(timestamp);
+                        });
+                    }
                 } break;
                 case "MSG_MAP": {
-                        this.game?.onMapUpdate(msg.data);
+                    this.game?.onMapUpdate(msg.data);
                 } break;
                 case "MSG_LEFT": {
-                        this.react.HomeScreen();
-                        this.game = null;
-                        this.activeScreen = 0;
+                    this.react.HomeScreen();
+                    this.game = null;
+                    this.activeScreen = 0;
                 } break;
                 case "MSG_CHATTED": {
-                        appendMessage(that.game.getUsername(msg.data.from), msg.data.message);
+                    appendMessage(that.game.getUsername(msg.data.from), msg.data.message);
                 } break;
                 case "MSG_ERROR": {
-                        if (!appendSystemMessage("SYS_MSG_ERROR", msg.data.message)) {
-                            // TODO: find a better way to display error messages
-                            alert(msg.data.message);
-                        }
+                    if (!appendSystemMessage("SYS_MSG_ERROR", msg.data.message)) {
+                        // TODO: find a better way to display error messages
+                        alert(msg.data.message);
+                    }
                 } break;
                 case "MSG_SYSTEM": {
-                        if (!appendSystemMessage(msg.data.type, msg.data.message)) {
-                            console.log(msg.data.type, msg.data.msg);
-                        }
+                    if (!appendSystemMessage(msg.data.type, msg.data.message)) {
+                        console.log(msg.data.type, msg.data.msg);
+                    }
                 } break;
                 case "MSG_SHOT": {
-                        this.game?.onShot(msg.data.cells);
+                    this.game?.onShot(msg.data.cells);
                 } break;
                 default: {
                     console.error("Unknown message type:", msg.type);
