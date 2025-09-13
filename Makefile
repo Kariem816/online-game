@@ -11,7 +11,7 @@ dev-client:
 	cd client && bun run dev
 
 build/game: build client
-	go build -tags singleexe -o build/game .
+	go build -o build/game .
 
 build:
 	mkdir -p build
