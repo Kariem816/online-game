@@ -22,7 +22,6 @@ export enum Messages {
 	MSG_MAP,
 	MSG_STATE,
 	MSG_MOUSE,
-	MSG_SETTINGS,
 	MSG_SYSTEM,
 	MSG_ERROR,
 	length,
@@ -34,12 +33,19 @@ export enum SystemMessageType {
 	length,
 }
 
+export type GameSettings = {
+	gameLength: number;
+	playerSpeed: number;
+	weapons: SettingsMessageWeapon[];
+};
+
 export type WelcomeMessage = {
 	id: number;
 	username: string;
+	settings: GameSettings;
 };
 
-export type HostMessage = never;
+export type HostMessage = undefined;
 export type HostedMessage = {
 	room: string;
 };
@@ -51,13 +57,13 @@ export type JoinedMessage = {
 	room: string;
 };
 
-export type LeaveMessage = never;
-export type LeftMessage = never;
+export type LeaveMessage = undefined;
+export type LeftMessage = undefined;
 
-export type StartMessage = never;
-export type StartedMessage = never;
+export type StartMessage = undefined;
+export type StartedMessage = undefined;
 
-export type TeamMessage = never;
+export type TeamMessage = undefined;
 
 export type WeaponMessage = {
 	weapon: TWeapon;
@@ -67,9 +73,9 @@ export type MoveMessage = {
 	direction: Direction;
 	start: boolean;
 };
-export type MovedMessage = never;
+export type MovedMessage = undefined;
 
-export type ShootMessage = never;
+export type ShootMessage = undefined;
 
 export type CellResult = {
 	x: number;
@@ -133,12 +139,6 @@ export type SettingsMessageWeapon = {
 	name: string;
 };
 
-export type SettingsMessage = {
-	gameLength: number;
-	playerSpeed: number;
-	weapons: SettingsMessageWeapon[];
-};
-
 export type SystemMessage = {
 	type: SystemMessageType;
 	message: string;
@@ -156,7 +156,6 @@ export type DecodeMessageReturn =
 	| ChattedMessage
 	| MapMessage
 	| StateMessage
-	| SettingsMessage
 	| SystemMessage
 	| ErrorMessage;
 
@@ -240,10 +239,6 @@ export type TypedMouseMessage = {
 	data: MouseMessage;
 	type: Messages.MSG_MOUSE;
 };
-export type TypedSettingsMessage = {
-	data: SettingsMessage;
-	type: Messages.MSG_SETTINGS;
-};
 export type TypedSystemMessage = {
 	data: SystemMessage;
 	type: Messages.MSG_SYSTEM;
@@ -274,6 +269,5 @@ export type GenericServerMessage =
 	| TypedMapMessage
 	| TypedStateMessage
 	| TypedMouseMessage
-	| TypedSettingsMessage
 	| TypedSystemMessage
 	| TypedErrorMessage;

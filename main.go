@@ -87,7 +87,7 @@ func main() {
 		}
 	}()
 
-	settingsMsg := msgs.SettingsMessage{
+	settingsMsg := types.GameSettings{
 		GameLength:    int32(consts.GameDuration.Milliseconds()),
 		MovementSpeed: consts.PlayerSpeed,
 		Weapons:       weapons.List(),
@@ -103,9 +103,8 @@ func main() {
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
 		id := types.UserID(rand.Int31() % 65536)
 		user := entities.NewUser(c, id, randomName())
-		wm := msgs.WelcomeMessage{ID: id, Username: user.Username}
+		wm := msgs.WelcomeMessage{ID: id, Username: user.Username, Settings: &settingsMsg}
 		user.SendMessage(wm)
-		user.SendMessage(settingsMsg)
 
 		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
 		for {

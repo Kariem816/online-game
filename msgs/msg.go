@@ -21,6 +21,7 @@ type GenericMessage struct {
 type WelcomeMessage struct {
 	ID       types.UserID
 	Username string
+	Settings *types.GameSettings
 }
 
 type HostMessage struct{}
@@ -86,12 +87,6 @@ type MouseMessage struct {
 	DY int32
 }
 
-type SettingsMessage struct {
-	GameLength    int32
-	MovementSpeed float32
-	Weapons       []types.SyncMessageWeapon
-}
-
 type SystemMessage struct {
 	Type    uint8
 	Message string
@@ -101,31 +96,30 @@ type ErrorMessage struct {
 }
 
 const (
-	MSG_WLCM     uint8 = iota
-	MSG_HOST     uint8 = iota
-	MSG_HOSTED   uint8 = iota
-	MSG_JOIN     uint8 = iota
-	MSG_JOINED   uint8 = iota
-	MSG_LEAVE    uint8 = iota
-	MSG_LEFT     uint8 = iota
-	MSG_START    uint8 = iota
-	MSG_STARTED  uint8 = iota
-	MSG_TEAM     uint8 = iota
-	MSG_TEAMED   uint8 = iota
-	MSG_WEAPON   uint8 = iota
-	MSG_MOVE     uint8 = iota
-	MSG_MOVED    uint8 = iota
-	MSG_SHOOT    uint8 = iota
-	MSG_SHOT     uint8 = iota
-	MSG_CHAT     uint8 = iota
-	MSG_CHATTED  uint8 = iota
-	MSG_MAP      uint8 = iota
-	MSG_STATE    uint8 = iota
-	MSG_MOUSE    uint8 = iota
-	MSG_SETTINGS uint8 = iota
-	MSG_SYSTEM   uint8 = iota
-	MSG_ERROR    uint8 = iota
-	MSG_LEN      uint8 = iota
+	MSG_WLCM    uint8 = iota
+	MSG_HOST    uint8 = iota
+	MSG_HOSTED  uint8 = iota
+	MSG_JOIN    uint8 = iota
+	MSG_JOINED  uint8 = iota
+	MSG_LEAVE   uint8 = iota
+	MSG_LEFT    uint8 = iota
+	MSG_START   uint8 = iota
+	MSG_STARTED uint8 = iota
+	MSG_TEAM    uint8 = iota
+	MSG_TEAMED  uint8 = iota
+	MSG_WEAPON  uint8 = iota
+	MSG_MOVE    uint8 = iota
+	MSG_MOVED   uint8 = iota
+	MSG_SHOOT   uint8 = iota
+	MSG_SHOT    uint8 = iota
+	MSG_CHAT    uint8 = iota
+	MSG_CHATTED uint8 = iota
+	MSG_MAP     uint8 = iota
+	MSG_STATE   uint8 = iota
+	MSG_MOUSE   uint8 = iota
+	MSG_SYSTEM  uint8 = iota
+	MSG_ERROR   uint8 = iota
+	MSG_LEN     uint8 = iota
 )
 
 const (
@@ -159,10 +153,19 @@ func ParseMessage(buf []byte) (GenericMessage, MessageError) {
 func (wm WelcomeMessage) Buffer() (*bytes.Buffer, bool) {
 	buf := &bytes.Buffer{}
 	buf.WriteByte(MSG_WLCM)
-	// binary.Write(buf, binary.LittleEndian, cm)
+
 	binary.Write(buf, binary.LittleEndian, wm.ID)
 	buf.WriteByte(uint8(len(wm.Username)))
 	buf.WriteString(wm.Username)
+	binary.Write(buf, binary.LittleEndian, wm.Settings.GameLength)
+	binary.Write(buf, binary.LittleEndian, wm.Settings.MovementSpeed)
+	buf.WriteByte(uint8(len(wm.Settings.Weapons)))
+	for _, w := range wm.Settings.Weapons {
+		binary.Write(buf, binary.LittleEndian, w.ID)
+		binary.Write(buf, binary.LittleEndian, w.Cooldown)
+		binary.Write(buf, binary.LittleEndian, uint8(len(w.Name)))
+		buf.WriteString(w.Name)
+	}
 
 	return buf, true
 }
@@ -416,23 +419,6 @@ func (mm *MouseMessage) Parse(gm GenericMessage) bool {
 	binary.Read(reader, binary.LittleEndian, &mm.DY)
 
 	return true
-}
-
-func (sm SettingsMessage) Buffer() (*bytes.Buffer, bool) {
-	buf := new(bytes.Buffer)
-
-	buf.WriteByte(MSG_SETTINGS)
-	binary.Write(buf, binary.LittleEndian, sm.GameLength)
-	binary.Write(buf, binary.LittleEndian, sm.MovementSpeed)
-	buf.WriteByte(uint8(len(sm.Weapons)))
-	for _, w := range sm.Weapons {
-		binary.Write(buf, binary.LittleEndian, w.ID)
-		binary.Write(buf, binary.LittleEndian, w.Cooldown)
-		binary.Write(buf, binary.LittleEndian, uint8(len(w.Name)))
-		buf.WriteString(w.Name)
-	}
-
-	return buf, true
 }
 
 func (sm SystemMessage) Buffer() (*bytes.Buffer, bool) {

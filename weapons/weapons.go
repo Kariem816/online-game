@@ -19,7 +19,7 @@ type Weapon interface {
 	Shoot(pos omath.Vector2, r float32, thata float32) []omath.IVector2
 	// PhantomShoot(pos, loc omath.Vector2) ([]types.CellResult, error) // doesn't fire cooldown
 
-	ToSyncMessage() types.SyncMessageWeapon
+	ToSettingsMessage() types.SettingsMessageWeapon
 }
 
 type BaseWeapon struct {
@@ -36,14 +36,14 @@ const (
 	WEAPON_COUNT                = iota
 )
 
-func List() []types.SyncMessageWeapon {
+func List() []types.SettingsMessageWeapon {
 	weapons := []Weapon{
 		NewGun(),
 		NewBomb(),
 	}
-	ws := make([]types.SyncMessageWeapon, len(weapons))
+	ws := make([]types.SettingsMessageWeapon, len(weapons))
 	for i, weapon := range weapons {
-		ws[i] = weapon.ToSyncMessage()
+		ws[i] = weapon.ToSettingsMessage()
 	}
 	return ws
 }

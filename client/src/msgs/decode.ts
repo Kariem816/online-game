@@ -8,11 +8,9 @@ import type {
 	GenericServerMessage,
 	HostedMessage,
 	JoinedMessage,
-	LeftMessage,
 	MapMessage,
 	ShotMessage,
 	StateMessage,
-	SettingsMessage,
 	SystemMessage,
 	TypedChattedMessage,
 	TypedWelcomeMessage,
@@ -23,7 +21,6 @@ import type {
 	TypedMapMessage,
 	TypedShotMessage,
 	TypedStateMessage,
-	TypedSettingsMessage,
 	TypedSystemMessage,
 	SettingsMessageWeapon,
 } from "./types";
@@ -94,9 +91,25 @@ function decodeMsgData(
 		case Messages.MSG_WLCM: {
 			const id = view.getInt16();
 			const username = view.getString(view.getUint8());
+			const gameLength = view.getInt32();
+			const playerSpeed = view.getFloat32();
+			const weaponsLen = view.getUint8();
+			const weapons = new Array<SettingsMessageWeapon>(weaponsLen);
+			for (let i = 0; i < weaponsLen; i++) {
+				weapons[i] = {
+					id: view.getUint8(),
+					cooldown: view.getUint32(),
+					name: view.getString(view.getUint8()),
+				};
+			}
 			return {
 				id,
 				username,
+				settings: {
+					gameLength,
+					playerSpeed,
+					weapons,
+				}
 			} as WelcomeMessage;
 		}
 		case Messages.MSG_HOSTED: {
@@ -108,7 +121,7 @@ function decodeMsgData(
 			return { room } as JoinedMessage;
 		}
 		case Messages.MSG_LEFT:
-			return {} as LeftMessage;
+			return;
 		case Messages.MSG_SHOT: {
 			const length = view.getUint8();
 			const cells = new Array(length);
@@ -183,24 +196,6 @@ function decodeMsgData(
 				players,
 			} as StateMessage;
 		}
-		case Messages.MSG_SETTINGS: {
-			const gameLength = view.getInt32();
-			const playerSpeed = view.getFloat32();
-			const weaponsLen = view.getUint8();
-			const weapons = new Array<SettingsMessageWeapon>(weaponsLen);
-			for (let i = 0; i < weaponsLen; i++) {
-				weapons[i] = {
-					id: view.getUint8(),
-					cooldown: view.getUint32(),
-					name: view.getString(view.getUint8()),
-				};
-			}
-			return {
-				gameLength,
-				playerSpeed,
-				weapons,
-			} as SettingsMessage;
-		}
 		case Messages.MSG_SYSTEM: {
 			const sysTypeIdx = view.getUint8();
 			if (sysTypeIdx >= SystemMessageType.length) {
@@ -249,7 +244,6 @@ export function decode(msg: ArrayBuffer): GenericServerMessage {
 		case Messages.MSG_CHATTED:
 		case Messages.MSG_MAP:
 		case Messages.MSG_STATE:
-		case Messages.MSG_SETTINGS:
 		case Messages.MSG_SYSTEM:
 		case Messages.MSG_ERROR:
 			return {
@@ -317,12 +311,6 @@ export function isStateMessage(
 	message: GenericServerMessage
 ): message is TypedStateMessage {
 	return message.type === Messages.MSG_STATE;
-}
-
-export function isSettingsMessage(
-	message: GenericServerMessage
-): message is TypedSettingsMessage {
-	return message.type === Messages.MSG_SETTINGS;
 }
 
 export function isSystemMessage(

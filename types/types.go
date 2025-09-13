@@ -62,8 +62,14 @@ type CellResult struct {
 	State Tile
 }
 
-type SyncMessageWeapon struct {
+type SettingsMessageWeapon struct {
 	ID       WeaponID
 	Cooldown uint32
 	Name     string
+}
+
+type GameSettings struct {
+	GameLength    int32
+	MovementSpeed float32
+	Weapons       []SettingsMessageWeapon
 }

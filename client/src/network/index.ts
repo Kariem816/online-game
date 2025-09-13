@@ -7,7 +7,6 @@ type NetworkEventMap = {
     disconnect: void;
     reconnect: void;
     welcome: msgs.WelcomeMessage;
-    settings: msgs.SettingsMessage;
     hosted: msgs.HostedMessage;
     joined: msgs.JoinedMessage;
     state: msgs.StateMessage;
@@ -37,8 +36,6 @@ export default class Network extends EventTarget {
             const msg = msgs.decode(event.data);
             if (msgs.isWelcomeMessage(msg)) {
                 this.dispatchEvent(new events.WelcomeEvent(msg.data));
-            } else if (msgs.isSettingsMessage(msg)) {
-                this.dispatchEvent(new events.SettingsEvent(msg.data));
             } else if (msgs.isHostedMessage(msg)) {
                 this.dispatchEvent(new events.HostedEvent(msg.data));
             } else if (msgs.isJoinedMessage(msg)) {
@@ -81,7 +78,7 @@ export default class Network extends EventTarget {
 
     send<T extends msgs.GenericServerMessage["type"]>(
         t: T,
-        ...args: Extract<msgs.GenericServerMessage, { type: T }>["data"] extends never
+        ...args: Extract<msgs.GenericServerMessage, { type: T }>["data"] extends undefined
             ? []
             : [Extract<msgs.GenericServerMessage, { type: T }>["data"]]
     ) {

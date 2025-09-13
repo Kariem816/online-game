@@ -74,8 +74,8 @@ func (b *Bomb) setCooldown() {
 	b.cooldownLeft = b.cooldown
 }
 
-func (b *Bomb) ToSyncMessage() types.SyncMessageWeapon {
-	return types.SyncMessageWeapon{
+func (b *Bomb) ToSettingsMessage() types.SettingsMessageWeapon {
+	return types.SettingsMessageWeapon{
 		ID:       b.ID(),
 		Cooldown: uint32(b.Cooldown().Milliseconds()),
 		Name:     b.Name(),

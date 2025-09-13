@@ -2,13 +2,13 @@ import React, { Screen } from "./react"
 import Game from "./game";
 import { appendMessage, appendSystemMessage } from "./chat";
 import Network from "./network";
-import { SystemMessageType, type SettingsMessage } from "./msgs";
+import { SystemMessageType, type GameSettings } from "./msgs";
 
 export default class Application {
     myId: number | null = null;
     myUsername: string | null = null;
 
-    settings: SettingsMessage | null = null;
+    settings: GameSettings | null = null;
     game: Game | null = null;
 
     lastTimestamp = 0;
@@ -37,10 +37,8 @@ export default class Application {
         network.on("welcome", (msg) => {
             that.myId = msg.id;
             that.myUsername = msg.username;
+            that.settings = msg.settings;
             that.react.updateUsername(that.myUsername);
-        });
-        network.on("settings", (msg) => {
-            that.settings = msg;
         });
         network.on("hosted", () => {
             const canvas = that.react.GameScreen();

@@ -65,8 +65,8 @@ func (g *Gun) setCooldown() {
 	g.cooldownLeft = g.cooldown
 }
 
-func (g *Gun) ToSyncMessage() types.SyncMessageWeapon {
-	return types.SyncMessageWeapon{
+func (g *Gun) ToSettingsMessage() types.SettingsMessageWeapon {
+	return types.SettingsMessageWeapon{
 		ID:       g.ID(),
 		Cooldown: uint32(g.Cooldown().Milliseconds()),
 		Name:     g.Name(),

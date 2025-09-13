@@ -24,12 +24,6 @@ export class WelcomeEvent extends CustomEvent<msgs.WelcomeMessage> {
     }
 }
 
-export class SettingsEvent extends CustomEvent<msgs.SettingsMessage> {
-    constructor(data: msgs.SettingsMessage) {
-        super("settings", { detail: data });
-    }
-}
-
 export class HostedEvent extends CustomEvent<msgs.HostedMessage> {
     constructor(data: msgs.HostedMessage) {
         super("hosted", { detail: data });

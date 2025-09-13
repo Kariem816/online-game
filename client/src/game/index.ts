@@ -4,7 +4,7 @@ import Collision from "../collision.js"
 import { Weapons } from "../weapons.js";
 import { copyText } from "../utils.js";
 import { appendSystemMessage } from "../chat.js";
-import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type SettingsMessage, type StateMessage } from "../msgs";
+import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings } from "../msgs";
 import type { Point } from "../geometry.js";
 import { Team, TWeapon } from "../consts.js";
 import type Network from "../network/index.js";
@@ -25,9 +25,7 @@ enum Tiles {
     WallTile,
 };
 
-type GameExtras = WelcomeMessage & {
-    settings: SettingsMessage,
-};
+type GameExtras = WelcomeMessage;
 
 export default class Game {
     isServerUpdated = false;
@@ -41,9 +39,9 @@ export default class Game {
     game: StateMessage;
     map: GameMap;
 
-    settings: SettingsMessage;
+    settings: GameSettings;
 
-    myData: WelcomeMessage;
+    myData: Omit<WelcomeMessage, "settings">;
 
     constructor(private network: Network, private renderer: HTMLCanvasElement, extras: GameExtras) {
         this.ctx = renderer.getContext("2d")!; // shouldn't fail ?!
