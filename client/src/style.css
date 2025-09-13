@@ -4,6 +4,19 @@
 
 :root {
   color-scheme: dark;
+  --color-primary: #00BFFF;
+
+  --color-teamA: #00FFFF;
+  --color-teamB: #FF4500;
+  --color-background: #28282B;
+  --color-backgroundHighlight: #222222;
+  --color-success: #39FF14;
+  --color-warning: #FFD700;
+  --color-error: #FF6347;
+  --color-foreground: #F0F8FF;
+  --color-tileA: #00BFFF;
+  --color-tileB: #FF6347;
+  --color-tileWall: #36454F;
 }
 
 body {
@@ -11,7 +24,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: #181818;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
 }
 
 .full-height {
@@ -46,30 +60,30 @@ h1 {
 
 .btn {
   padding: 5px 10px;
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-teamA);
+  color: var(--color-backgroundHighlight);
   border: none;
   cursor: pointer;
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  opacity: 0.8;
 }
 
 .secondary {
-  background-color: #28a745;
+  background-color: var(--color-success);
 }
 
 .secondary:hover {
-  background-color: #218838;
+  opacity: 0.8;
 }
 
 .danger {
-  background-color: #dc3545;
+  background-color: var(--color-error);
 }
 
 .danger:hover {
-  background-color: #c82333;
+  opacity: 0.8;
 }
 
 .dashboard {
@@ -87,7 +101,7 @@ h1 {
 .chat {
   display: flex;
   flex-direction: column;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-foreground);
   padding: 0.5rem;
 }
 
@@ -112,15 +126,15 @@ h1 {
   gap: 0.5rem;
 
   &.error {
-    color: #dc3545;
+    color: var(--color-error);
   }
 
   &.success {
-    color: #28a745;
+    color: var(--color-success);
   }
 
   &.info {
-    color: #007bff;
+    color: var(--color-primary);
   }
 }
 
@@ -148,6 +162,6 @@ h1 {
 }
 
 canvas {
-  border: 1px solid #222;
+  border: 1px solid var(--color-foreground);
   width: 100%;
 }

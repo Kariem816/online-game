@@ -33,6 +33,7 @@ export const theme = {
 		backgroundHighlight: "#222222",
 		success: "#39FF14",
 		warning: "#FFD700",
+		error: "#FF6347",
 		foreground: "#F0F8FF",
 		tileA: "#00BFFF",
 		tileB: "#FF6347",
