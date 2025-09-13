@@ -41,8 +41,6 @@ func NewGameState(width, height int32) *types.GameState {
 
 	return &types.GameState{
 		GameMap: gameMap,
-		TeamA:   consts.TEAM_A_COLOR,
-		TeamB:   consts.TEAM_B_COLOR,
 		Phase:   WaitingForPlayers,
 	}
 }

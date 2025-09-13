@@ -106,8 +106,6 @@ export type StateMessage = {
 	room: string;
 	startedAt?: Date;
 	state: {
-		teamA: number;
-		teamB: number;
 		scoreA: number;
 		scoreB: number;
 		phase: number;

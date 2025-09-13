@@ -4,8 +4,9 @@ import { Weapons } from "../weapons.js";
 import { copyText } from "../utils.js";
 import { appendSystemMessage } from "../chat.js";
 import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings } from "../msgs";
-import type { Point } from "../geometry.js";
+import { theme } from "../consts.js";
 import { Team, TWeapon } from "../consts.js";
+import type { Point } from "../geometry.js";
 import type Network from "../network/index";
 
 // Game States
@@ -49,7 +50,7 @@ export default class Game {
 
         this.input = new Input(renderer);
 
-        this.game = { host: 0, players: [], room: "", state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0, teamA: 0, teamB: 0 } };
+        this.game = { host: 0, players: [], room: "", state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0 } };
         this.map = new GameMap();
 
         const { settings, ...myData } = extras;
@@ -93,12 +94,12 @@ export default class Game {
 
     canvasToGameCoords({ x, y }: Point) {
         const { width, height } = this.renderer;
-        const wOffset = width * 0.1;
+        const wOffset = width * 0.05;
         const wRest = width - wOffset;
         const hOffset = height * 0.1;
         const hRest = height - hOffset;
 
-        const gx = (Math.max(wOffset, x) - wOffset) * this.map.width / wRest;
+        const gx = (Math.max(wOffset, x) - wOffset) * this.map.width / (wRest - wOffset);
         const gy = (Math.max(hOffset, y) - hOffset) * this.map.height / hRest;
 
         return { x: gx, y: gy };
@@ -106,7 +107,7 @@ export default class Game {
 
     gameCoordsToCanvas({ x, y }: Point) {
         const { width, height } = this.renderer;
-        const wOffset = width * 0.1;
+        const wOffset = width * 0.05;
         const wRest = width - wOffset;
         const hOffset = height * 0.1;
         const hRest = height - hOffset;
@@ -283,33 +284,34 @@ export default class Game {
 
     render() {
         const { width, height } = this.renderer;
-        const wOffset = width * 0.1;
+        const wOffset = width * 0.05;
         const wRest = width - wOffset;
         const hOffset = height * 0.1;
         const hRest = height - hOffset;
-        const teamAColor = "#" + this.game.state.teamA.toString(16).padStart(6, "0");
-        const teamBColor = "#" + this.game.state.teamB.toString(16).padStart(6, "0");
-        
+        const teamAColor = theme.colors.teamA;
+        const teamBColor = theme.colors.teamB;
+        const me = this.getMyPlayer();
+
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
         // Bars
-        this.ctx.fillStyle = "#353535";
+        this.ctx.fillStyle = theme.colors.background;
         this.ctx.fillRect(0, 0, width, height);
 
         // Top Left Corner
-        if (this.input.isMouseOver({ x: 0, y: 0, w: wOffset, h: hOffset })) {
-            this.ctx.fillStyle = "#555555"
-            this.ctx.fillRect(0, 0, wOffset, hOffset);
+        if (this.input.isMouseOver({ x: 0, y: 0, w: wOffset * 2, h: hOffset })) {
+            this.ctx.fillStyle = theme.colors.backgroundHighlight;
+            this.ctx.fillRect(0, 0, wOffset * 2, hOffset);
             if (this.input.isMouseReleased(Mouse.Left)) {
                 copyText(this.game.room);
                 appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Copied room code to clipboard");
             }
         }
-        this.ctx.fillStyle = "#f0f0f0";
+        this.ctx.fillStyle = theme.colors.foreground;
         this.ctx.font = "30px Arial";
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "middle";
-        this.ctx.fillText(`Room: ${this.game.room}`, wOffset / 2, hOffset / 2, wOffset - 16);
+        this.ctx.fillText(this.game.room, wOffset, hOffset / 2, wOffset - 16);
 
         // Top bar
         let timeLeft: number;
@@ -317,7 +319,7 @@ export default class Game {
             const start = this.game.startedAt?.getTime() ?? 0;
             const now = Date.now();
             timeLeft = this.settings.gameLength - (now - start);
-            this.ctx.fillStyle = "#f0f0f0";
+            this.ctx.fillStyle = theme.colors.foreground;
             if (timeLeft < 0) {
                 this.ctx.fillText("00:00", wOffset + wRest / 2, hOffset / 2);
             } else {
@@ -326,47 +328,54 @@ export default class Game {
                 this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
             }
         } else if (this.game.state.phase === GamePhases.GameOver) {
-            this.ctx.fillStyle = "#f0f0f0";
+            this.ctx.fillStyle = theme.colors.foreground;
             this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
         } else {
-            this.ctx.fillStyle = "#f0f0f0";
+            this.ctx.fillStyle = theme.colors.foreground;
             const minutes = Math.floor(this.settings.gameLength / 1000 / 60).toString().padStart(2, "0");
             const seconds = Math.floor(this.settings.gameLength / 1000 % 60).toString().padStart(2, "0");
             this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
         }
 
         // Sidebar
-        const sidebarCenter = hOffset + hRest / 2;
-        // score
-        const score = this.game.state.phase === GamePhases.WaitingForPlayers ? "-" : `${this.game.state.scoreA} - ${this.game.state.scoreB}`;
-        this.ctx.fillStyle = "#f0f0f0";
-        this.ctx.fillText(score, wOffset / 2, sidebarCenter, wOffset - 20);
-
-        // Teams
+        const timerWidth = this.ctx.measureText("Time is up").width;
+        const padding = 20;
+        const middle = wOffset + wRest / 2;
+        const scoreWidth = this.ctx.measureText("000").width;
+        const playerSize = hOffset - padding;
         const teamA = this.game.players.filter((p) => p.team === Team.TeamA);
         const teamB = this.game.players.filter((p) => p.team === Team.TeamB);
-        const squareSize = wOffset - 20;
 
-        // team A
+        // Team A
         this.ctx.fillStyle = teamAColor;
-        this.ctx.fillRect(10, sidebarCenter - 30 - squareSize, squareSize, squareSize);
-        this.ctx.fillStyle = "#f0f0f0";
-        this.ctx.fillText(`Team A (${teamA.length})`, wOffset / 2, sidebarCenter - 55 - squareSize, wOffset - 20);
+        let end = middle - (timerWidth / 2) - padding;
+        this.ctx.fillText(this.game.state.scoreA.toString(), end - scoreWidth / 2, hOffset / 2);
+        end -= scoreWidth + padding;
+        for (const player of teamA) {
+            const isMe = player.user.id === this.myData.id;
+            Weapons[player.weapon].drawIcon(this.ctx, theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"], end - padding - scoreWidth, padding / 2, playerSize, playerSize);
+            end -= playerSize + padding;
+        }
 
-        // team B
+        // Team B
         this.ctx.fillStyle = teamBColor;
-        this.ctx.fillRect(10, sidebarCenter + 30, squareSize, squareSize);
-        this.ctx.fillStyle = "#f0f0f0";
-        this.ctx.fillText(`Team B (${teamB.length})`, wOffset / 2, sidebarCenter + 55 + squareSize, wOffset - 20);
+        let start = middle + (timerWidth / 2) + padding;
+        this.ctx.fillText(this.game.state.scoreB.toString(), start + scoreWidth / 2, hOffset / 2);
+        start += scoreWidth + padding;
+        for (const player of teamB) {
+            const isMe = player.user.id === this.myData.id;
+            Weapons[player.weapon].drawIcon(this.ctx, theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"], start, padding / 2, playerSize, playerSize);
+            start += playerSize + padding;
+        }
 
         // Map
-        this.ctx.fillStyle = "#FFD35A";
-        this.ctx.fillRect(wOffset, hOffset, wRest, hRest);
+        this.ctx.fillStyle = theme.colors.backgroundHighlight;
+        this.ctx.fillRect(wOffset, hOffset, wRest - wOffset, hRest);
 
         // Render map
         if (this.gameStarted()) {
             const { width: mapWidth, height: mapHeight } = this.map;
-            const cellWidth = Math.floor(wRest / mapWidth);
+            const cellWidth = Math.floor((wRest - wOffset) / mapWidth);
             const mapWidthOffset = wOffset / cellWidth;
             const cellHeight = Math.floor(hRest / mapHeight);
             const mapHeightOffset = hOffset / cellHeight;
@@ -380,15 +389,15 @@ export default class Game {
                         // Empty
                     } break;
                     case Tiles.TeamATile: {
-                        this.ctx.fillStyle = teamAColor;
+                        this.ctx.fillStyle = theme.colors.tileA;
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                     } break;
                     case Tiles.TeamBTile: {
-                        this.ctx.fillStyle = teamBColor;
+                        this.ctx.fillStyle = theme.colors.tileB;
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                     } break;
                     case Tiles.WallTile: {
-                        this.ctx.fillStyle = "#FFA823";
+                        this.ctx.fillStyle = theme.colors.tileWall;
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
                     } break;
                 }
@@ -398,10 +407,10 @@ export default class Game {
             for (const player of this.game.players) {
                 const x = player.x + mapWidthOffset;
                 const y = player.y + mapHeightOffset;
-                const color = player.team === 0 ? teamAColor : teamBColor;
+                const color = theme.colors[player.team === Team.TeamA ? "teamA" : "teamB"];
 
                 const ringColor = player.user.id === this.game.host ?
-                    "#fcbe03" : "#ffffff";
+                    theme.colors.warning : theme.colors.foreground;
                 const withRing = player.user.id === this.game.host || player.user.id === this.myData.id;
 
                 // ring
@@ -421,7 +430,7 @@ export default class Game {
 
                 // cooldown
                 if (player.cooldown > 0) {
-                    this.ctx.strokeStyle = "tomato";
+                    this.ctx.strokeStyle = theme.colors[player.team === Team.TeamA ? "teamB" : "teamA"];
                     this.ctx.lineWidth = 0.2 * cellWidth; // TODO: this will cause issues if cellWidth !== cellHeight
                     this.ctx.beginPath();
 
@@ -468,16 +477,15 @@ export default class Game {
             }
 
             if (this.game.state.phase === GamePhases.GettingReady) {
-                const me = this.getMyPlayer();
                 const x = me.x + mapWidthOffset;
                 const y = me.y + mapHeightOffset;
-                this.ctx.fillStyle = "#f0f0f0";
+                this.ctx.fillStyle = theme.colors.foreground;
                 this.ctx.textAlign = "center";
                 const secs = Math.floor((timeLeft! - this.settings.gameLength) / 1000);
                 this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
         } else {
-            this.ctx.fillStyle = "#353535";
+            this.ctx.fillStyle = theme.colors.foreground;
             this.ctx.font = "60px Arial";
             switch (this.game.state.phase) {
                 case GamePhases.WaitingForPlayers: {
@@ -498,12 +506,12 @@ export default class Game {
         const radius = 10;
         const { x, y } = this.input.getMousePosition();
 
-        this.ctx.fillStyle = "#353535";
+        this.ctx.fillStyle = theme.colors.backgroundHighlight;
         this.ctx.beginPath();
         this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
         this.ctx.fill();
 
-        this.ctx.strokeStyle = "red";
+        this.ctx.strokeStyle = theme.colors.teamB;
         this.ctx.lineWidth = 3;
         this.ctx.moveTo(x - radius, y);
         this.ctx.lineTo(x + radius, y);
@@ -511,7 +519,7 @@ export default class Game {
         this.ctx.lineTo(x, y + radius);
         this.ctx.stroke();
 
-        this.ctx.strokeStyle = "#f0f0f0";
+        this.ctx.strokeStyle = theme.colors.foreground;
         this.ctx.beginPath();
         this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
         this.ctx.stroke();

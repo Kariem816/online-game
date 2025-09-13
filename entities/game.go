@@ -361,8 +361,6 @@ func (g *Game) BroadcastState(exclude ...types.UserID) {
 			Milli: int16(m),
 		},
 		State: types.StateMessageState{
-			TeamA:  int32(g.State.TeamA),
-			TeamB:  int32(g.State.TeamB),
 			ScoreA: int32(g.State.ScoreA),
 			ScoreB: int32(g.State.ScoreB),
 			Phase:  g.State.Phase,

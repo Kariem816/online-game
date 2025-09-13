@@ -24,3 +24,18 @@ export enum TWeapon {
 	WEAPON_GUN,
 	WEAPON_BOMB,
 };
+
+export const theme = {
+	colors: {
+		teamA: "#00FFFF",
+		teamB: "#FF4500",
+		background: "#28282B",
+		backgroundHighlight: "#222222",
+		success: "#39FF14",
+		warning: "#FFD700",
+		foreground: "#F0F8FF",
+		tileA: "#00BFFF",
+		tileB: "#FF6347",
+		tileWall: "#36454F",
+	}
+};

@@ -383,8 +383,6 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	buf.WriteString(sm.Room)
 	binary.Write(buf, binary.LittleEndian, sm.StartedAt.Sec)
 	binary.Write(buf, binary.LittleEndian, sm.StartedAt.Milli)
-	binary.Write(buf, binary.LittleEndian, sm.State.TeamA)
-	binary.Write(buf, binary.LittleEndian, sm.State.TeamB)
 	binary.Write(buf, binary.LittleEndian, sm.State.ScoreA)
 	binary.Write(buf, binary.LittleEndian, sm.State.ScoreB)
 	buf.WriteByte(byte(sm.State.Phase))

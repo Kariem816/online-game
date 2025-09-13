@@ -159,8 +159,6 @@ function decodeMsgData(
 			}
 
 			const state: StateMessage["state"] = {
-				teamA: view.getInt32(),
-				teamB: view.getInt32(),
 				scoreA: view.getInt32(),
 				scoreB: view.getInt32(),
 				phase: view.getUint8(),

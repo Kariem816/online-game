@@ -26,16 +26,12 @@ type NetworkTime struct {
 
 type GameState struct {
 	GameMap GameMap
-	TeamA   int
-	TeamB   int
 	ScoreA  int
 	ScoreB  int
 	Phase   GamePhase
 }
 
 type StateMessageState struct {
-	TeamA  int32
-	TeamB  int32
 	ScoreA int32
 	ScoreB int32
 	Phase  GamePhase
