@@ -5,3 +5,5 @@ performance/
 build/
 
 tmp/
+
+public/*
