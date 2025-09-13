@@ -1,3 +1,6 @@
+import Collision from "./collision";
+import type { Rect } from "./geometry";
+
 export enum Mouse {
     "Left",
     "Middle",
@@ -5,42 +8,42 @@ export enum Mouse {
 };
 
 export default class Input {
-    canvas: HTMLCanvasElement;
-    mounted: boolean;
-    boundingRect: DOMRect;
+    private canvas: HTMLCanvasElement;
+    public mounted: boolean;
+    private boundingRect: DOMRect;
 
     // keyboard
-    keysDown: Set<string>;
-    keysPressed: Set<string>;
-    keysReleased: Set<string>;
-    _rawKeysPressed: Set<string>;
-    _rawKeysReleased: Set<string>;
+    private keysDown: Set<string>;
+    private keysPressed: Set<string>;
+    private keysReleased: Set<string>;
+    private _rawKeysPressed: Set<string>;
+    private _rawKeysReleased: Set<string>;
 
     // mouse
-    mouseDown: Set<Mouse>;
-    mousePressed: Set<Mouse>;
-    mouseReleased: Set<Mouse>;
-    _rawMousePressed: Set<Mouse>;
-    _rawMouseReleased: Set<Mouse>;
+    private mouseDown: Set<Mouse>;
+    private mousePressed: Set<Mouse>;
+    private mouseReleased: Set<Mouse>;
+    private _rawMousePressed: Set<Mouse>;
+    private _rawMouseReleased: Set<Mouse>;
 
     // Mouse Position
-    mouseX: number;
-    mouseY: number;
-    deltaX: number;
-    deltaY: number;
-    frameDeltaX: number;
-    frameDeltaY: number;
-    startX: number;
-    startY: number;
-    mouseSensitivity: number;
+    private mouseX: number;
+    private mouseY: number;
+    private deltaX: number;
+    private deltaY: number;
+    private frameDeltaX: number;
+    private frameDeltaY: number;
+    private startX: number;
+    private startY: number;
+    private mouseSensitivity: number;
 
     // Wheel
-    wheelDelta: number;
-    frameWheelDelta: number;
-    scrollSensitivity: number;
+    private wheelDelta: number;
+    private frameWheelDelta: number;
+    private scrollSensitivity: number;
 
     // handlers
-    handlers: {
+    private handlers: {
         keydown: (e: KeyboardEvent) => void;
         keyup: (e: KeyboardEvent) => void;
         mousedown: (e: MouseEvent) => void;
@@ -86,56 +89,56 @@ export default class Input {
         this.scrollSensitivity = 1;
 
         this.handlers = {
-            keydown: this._keyDownHandler.bind(this),
-            keyup: this._keyUpHandler.bind(this),
-            mousedown: this._mouseDownHandler.bind(this),
-            mouseup: this._mouseUpHandler.bind(this),
-            mousemove: this._mouseMoveHandler.bind(this),
-            wheel: this._wheelHandler.bind(this),
-            blur: this._blurHandler.bind(this),
+            keydown: this.keyDownHandler.bind(this),
+            keyup: this.keyUpHandler.bind(this),
+            mousedown: this.mouseDownHandler.bind(this),
+            mouseup: this.mouseUpHandler.bind(this),
+            mousemove: this.mouseMoveHandler.bind(this),
+            wheel: this.wheelHandler.bind(this),
+            blur: this.blurHandler.bind(this),
         }
 
-        window.addEventListener("resize", this._resizeHandler.bind(this));
+        window.addEventListener("resize", this.resizeHandler.bind(this));
     }
 
-    _keyDownHandler(e: KeyboardEvent) {
+    private keyDownHandler(e: KeyboardEvent) {
         const code = e.code;
         if (!this.keysDown.has(code)) this._rawKeysPressed.add(code);
         this.keysDown.add(code);
     }
 
-    _keyUpHandler(e: KeyboardEvent) {
+    private keyUpHandler(e: KeyboardEvent) {
         const code = e.code;
         this.keysDown.delete(code);
         this._rawKeysReleased.add(code);
     }
 
-    _mouseDownHandler(e: MouseEvent) {
+    private mouseDownHandler(e: MouseEvent) {
         const b = e.button;
         if (!this.mouseDown.has(b)) this._rawMousePressed.add(b);
         this.mouseDown.add(b);
     }
 
-    _mouseUpHandler(e: MouseEvent) {
+    private mouseUpHandler(e: MouseEvent) {
         const b = e.button;
         this.mouseDown.delete(b);
         this._rawMouseReleased.add(b);
     }
 
-    _mouseMoveHandler(e: MouseEvent) {
+    private mouseMoveHandler(e: MouseEvent) {
         this.frameDeltaX += e.movementX * this.mouseSensitivity;
         this.frameDeltaY += e.movementY * this.mouseSensitivity;
     }
 
-    _wheelHandler(e: WheelEvent) {
+    private wheelHandler(e: WheelEvent) {
         this.frameWheelDelta += e.deltaY * this.scrollSensitivity;
     }
 
-    _resizeHandler() {
+    private resizeHandler() {
         this.boundingRect = this.canvas.getBoundingClientRect();
     }
 
-    _blurHandler() {
+    private blurHandler() {
         this.keysDown.clear();
         this.mouseDown.clear();
         this._rawKeysPressed.clear();
@@ -189,11 +192,20 @@ export default class Input {
     isMouseDown(button: number) { return this.mouseDown.has(button); }
     isMousePressed(button: number) { return this.mousePressed.has(button); }
     isMouseReleased(button: number) { return this.mouseReleased.has(button); }
+    isMouseOver(r: Rect) { return Collision.pointRect({ x: this.mouseX, y: this.mouseY }, r); }
     getMousePosition() { return { x: this.mouseX, y: this.mouseY }; }
     getMouseDelta() { return { x: this.deltaX, y: this.deltaY }; }
+    getMouseSensitivity() { return this.mouseSensitivity; }
+    setMouseSensitivity(sensitivity: number) {
+        if (sensitivity > 0 && sensitivity <= 10) this.mouseSensitivity = sensitivity;
+    }
 
     // wheel
     getWheelDelta() { return this.wheelDelta; }
+    getWheelSensitivity() { return this.scrollSensitivity; }
+    setWheelSensitivity(sensitivity: number) {
+        if (sensitivity > 0 && sensitivity <= 10) this.scrollSensitivity = sensitivity;
+    }
 
     // pointer lock listeners
     addListeners() {

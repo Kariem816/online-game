@@ -1,13 +1,12 @@
 import Input, { Mouse } from "../input.js";
 import GameMap from "../map.js";
-import Collision from "../collision.js"
 import { Weapons } from "../weapons.js";
 import { copyText } from "../utils.js";
 import { appendSystemMessage } from "../chat.js";
 import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings } from "../msgs";
 import type { Point } from "../geometry.js";
 import { Team, TWeapon } from "../consts.js";
-import type Network from "../network/index.js";
+import type Network from "../network/index";
 
 // Game States
 enum GamePhases {
@@ -290,7 +289,7 @@ export default class Game {
         const hRest = height - hOffset;
         const teamAColor = "#" + this.game.state.teamA.toString(16).padStart(6, "0");
         const teamBColor = "#" + this.game.state.teamB.toString(16).padStart(6, "0");
-
+        
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
         // Bars
@@ -298,7 +297,7 @@ export default class Game {
         this.ctx.fillRect(0, 0, width, height);
 
         // Top Left Corner
-        if (Collision.pointRect(this.input.getMousePosition(), { x: 0, y: 0, w: wOffset, h: hOffset })) {
+        if (this.input.isMouseOver({ x: 0, y: 0, w: wOffset, h: hOffset })) {
             this.ctx.fillStyle = "#555555"
             this.ctx.fillRect(0, 0, wOffset, hOffset);
             if (this.input.isMouseReleased(Mouse.Left)) {
