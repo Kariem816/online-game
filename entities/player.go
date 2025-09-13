@@ -140,6 +140,9 @@ func (p *Player) Cooldown() uint8 {
 }
 
 func (p *Player) ChangeWeapon(weaponID types.WeaponID) {
+	if p.Weapon.ID() == weaponID {
+		return
+	}
 	switch weaponID {
 	case weapons.WEAPON_GUN:
 		p.Weapon = weapons.NewGun()

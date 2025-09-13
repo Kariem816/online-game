@@ -24,7 +24,8 @@ var baseBomb = BaseWeapon{
 
 func NewBomb() *Bomb {
 	return &Bomb{
-		BaseWeapon: baseBomb,
+		BaseWeapon:   baseBomb,
+		cooldownLeft: baseBomb.cooldown,
 	}
 }
 

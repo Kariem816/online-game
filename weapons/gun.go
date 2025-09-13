@@ -22,7 +22,8 @@ var baseGun = BaseWeapon{
 
 func NewGun() *Gun {
 	return &Gun{
-		BaseWeapon: baseGun,
+		BaseWeapon:   baseGun,
+		cooldownLeft: baseGun.cooldown,
 	}
 }
 
