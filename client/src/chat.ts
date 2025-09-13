@@ -1,6 +1,6 @@
 import { SystemMessageType } from "./msgs";
 
-export function appendMessage(from: string, message: string) {
+export function appendChatMessage(from: string, message: string) {
     const chatBox = document.getElementById("chatBox");
     if (!chatBox) return false;
 
@@ -12,9 +12,6 @@ export function appendMessage(from: string, message: string) {
     sender.textContent = from;
     sender.classList.add("chat-sender");
     chatMessage.appendChild(sender);
-
-    const space = document.createTextNode(" ");
-    chatMessage.appendChild(space);
 
     const msg = document.createElement("span");
     msg.textContent = message;

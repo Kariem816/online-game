@@ -1,6 +1,6 @@
 import React, { Screen } from "./react"
 import Game from "./game";
-import { appendMessage, appendSystemMessage } from "./chat";
+import { appendChatMessage, appendSystemMessage } from "./chat";
 import Network from "./network";
 import { SystemMessageType, type GameSettings } from "./msgs";
 
@@ -83,7 +83,7 @@ export default class Application {
             that.activeScreen = 0;
         });
         network.on("chatted", (msg) => {
-            appendMessage(that.game!.getUsername(msg.from), msg.message);
+            appendChatMessage(that.game!.getUsername(msg.from), msg.message);
         });
         network.on("error", (msg) => {
             if (!appendSystemMessage(SystemMessageType.SYS_MSG_ERROR, msg.message)) {

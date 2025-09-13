@@ -81,7 +81,6 @@ h1 {
 }
 
 .chat {
-  align-self: stretch;
   display: flex;
   flex-direction: column;
   border: 1px solid #ccc;
@@ -106,7 +105,6 @@ h1 {
 
 .chat-message {
   margin: 0.5rem 0;
-  display: flex;
   gap: 0.5rem;
 
   &.error {
@@ -126,12 +124,13 @@ h1 {
   font-weight: bold;
 
   &:after {
-    content: ':';
+    content: ': ';
   }
 }
 
 .chat-text {
   margin: 0;
+  word-break: break-word;
 }
 
 .chat-send {
