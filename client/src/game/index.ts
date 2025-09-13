@@ -515,8 +515,8 @@ export default class Game {
                 } break;
                 case GamePhases.GameOver: {
                     const winner = this.game.state.scoreA > this.game.state.scoreB ? "Team A Wins"
-                        : this.game.state.scoreA === this.game.state.scoreB ? "It's a Tie" : "Team B Wins";
-                    this.ctx.fillText(`Game Over! ${winner}`, width / 2, hOffset + hRest / 2);
+                        : this.game.state.scoreA < this.game.state.scoreB ? "Team B Wins" : "It's a Tie";
+                    this.ctx.fillText(winner, width / 2, hOffset + hRest / 2);
                 } break;
             }
         }
