@@ -1,4 +1,5 @@
-import { encode, Messages, SystemMessageType } from "./msgs";
+import Network from "./network";
+import { Messages, SystemMessageType } from "./msgs";
 import { appendSystemMessage } from "./chat";
 
 const root = document.getElementById("app")!;
@@ -7,61 +8,31 @@ export enum Screen {
     "Game",
 }
 
-function hostRoom(ws: WebSocket) {
-    ws.send(
-        encode({
-            type: Messages.MSG_HOST,
-            data: {},
-        })
-    );
+function hostRoom(network: Network) {
+    network.send(Messages.MSG_HOST);
 }
 
-function joinRoom(ws: WebSocket, roomInput: HTMLInputElement) {
+function joinRoom(network: Network, roomInput: HTMLInputElement) {
     const room = roomInput.value;
-    try {
-        const buf = encode({
-            type: Messages.MSG_JOIN,
-            data: { room },
-        })
-        ws.send(buf);
-    } catch (e: any) {
-        alert(e.message);
-        return;
-    }
+    network.send(Messages.MSG_JOIN, { room });
 }
 
-function leaveRoom(ws: WebSocket) {
-    ws.send(
-        encode({
-            type: Messages.MSG_LEAVE,
-            data: {},
-        })
-    );
+function leaveRoom(network: Network) {
+    network.send(Messages.MSG_LEAVE);
 }
 
-function chat(ws: WebSocket, chatInput: HTMLInputElement) {
+function chat(network: Network, chatInput: HTMLInputElement) {
     const message = chatInput.value;
     if (!message) return;
-    try {
-        const buf = encode({
-            type: Messages.MSG_CHAT,
-            data: { message },
-        });
-        ws.send(buf);
-        chatInput.value = "";
-    } catch (e: any) {
-        appendSystemMessage(SystemMessageType.SYS_MSG_ERROR, e.message);
-        return;
-    }
+    network.send(Messages.MSG_CHAT, { message });
+    chatInput.value = "";
 }
 
 export default class React {
     active = Screen.Home;
-    ws: WebSocket;
     username: string;
 
-    constructor(ws: WebSocket) {
-        this.ws = ws;
+    constructor(private network: Network) {
         this.username = "Unknown";
 
         this.HomeScreen();
@@ -73,11 +44,6 @@ export default class React {
         } else if (this.active === Screen.Game) {
             this.GameScreen();
         }
-    }
-
-    updateWs(ws: WebSocket) {
-        this.ws = ws;
-        this.#rerender();
     }
 
     updateUsername(username: string) {
@@ -108,6 +74,8 @@ export default class React {
 
         const roomInput = document.createElement("input");
         roomInput.type = "text";
+        roomInput.placeholder = "Room ID";
+        roomInput.maxLength = 4;
         roomBox.appendChild(roomInput);
 
         const joinBtn = document.createElement("button");
@@ -124,16 +92,16 @@ export default class React {
 
         roomInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                joinRoom(this.ws, roomInput);
+                joinRoom(this.network, roomInput);
             }
         })
 
         joinBtn.addEventListener("click", () => {
-            joinRoom(this.ws, roomInput);
+            joinRoom(this.network, roomInput);
         });
 
         hostBtn.addEventListener("click", () => {
-            hostRoom(this.ws);
+            hostRoom(this.network);
         });
     }
 
@@ -187,6 +155,8 @@ export default class React {
 
         const chatInput = document.createElement("input");
         chatInput.type = "text";
+        chatInput.placeholder = "Message...";
+        chatInput.maxLength = 255;
         chatSend.appendChild(chatInput);
 
         const chatBtn = document.createElement("button");
@@ -199,16 +169,16 @@ export default class React {
 
         chatInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                chat(this.ws, chatInput);
+                chat(this.network, chatInput);
             }
         });
 
         chatBtn.addEventListener("click", () => {
-            chat(this.ws, chatInput);
+            chat(this.network, chatInput);
         });
 
         leaveBtn.addEventListener("click", () => {
-            leaveRoom(this.ws);
+            leaveRoom(this.network);
         });
 
         appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Welcome to the game");

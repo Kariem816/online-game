@@ -25,9 +25,12 @@ export function encode(msg: GenericServerMessage): Uint8Array {
 			buf[0] = msg.type;
 			const { room } = data;
 			if (room.length > 4) {
-				throw new Error("Room name too long");
+				console.warn("Room name too long. Truncating...");
+			} else if (room.length < 4) {
+				console.warn("Room name too short. Padding...");
+				room.padEnd(4, " ");
 			}
-			const roomBuf = new TextEncoder().encode(room);
+			const roomBuf = new TextEncoder().encode(room.slice(0, 4));
 			buf.set(roomBuf, 1);
 			return buf;
 		}
@@ -68,9 +71,9 @@ export function encode(msg: GenericServerMessage): Uint8Array {
 			const data = msg.data;
 			const sz = data.message.length;
 			if (sz > 255) {
-				throw new Error("Message too long");
+				console.warn("Message too long. Truncating...");
 			}
-			const buf = new Uint8Array(sz + 1 + 1); // for type and size
+			const buf = new Uint8Array((sz > 255 ? 255 : sz) + 1 + 1); // for type and size
 			buf[0] = msg.type;
 			buf[1] = sz;
 			const msgBuf = new TextEncoder().encode(data.message);
@@ -89,7 +92,7 @@ export function encode(msg: GenericServerMessage): Uint8Array {
 
 			return new Uint8Array(buf);
 		}
-		case Messages.MSG_CNCT:
+		case Messages.MSG_WLCM:
 		case Messages.MSG_HOSTED:
 		case Messages.MSG_JOINED:
 		case Messages.MSG_LEFT:

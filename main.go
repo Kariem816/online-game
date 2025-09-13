@@ -103,8 +103,8 @@ func main() {
 	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
 		id := types.UserID(rand.Int31() % 65536)
 		user := entities.NewUser(c, id, randomName())
-		cm := msgs.ConnectedMessage{ID: id, Username: user.Username}
-		user.SendMessage(cm)
+		wm := msgs.WelcomeMessage{ID: id, Username: user.Username}
+		user.SendMessage(wm)
 		user.SendMessage(settingsMsg)
 
 		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index

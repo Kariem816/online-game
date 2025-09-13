@@ -1,7 +1,7 @@
 import type { Direction, Team, Tile, TWeapon } from "../consts";
 
 export enum Messages {
-	MSG_CNCT,
+	MSG_WLCM,
 	MSG_HOST,
 	MSG_HOSTED,
 	MSG_JOIN,
@@ -34,12 +34,12 @@ export enum SystemMessageType {
 	length,
 }
 
-export type ConnectedMessage = {
+export type WelcomeMessage = {
 	id: number;
 	username: string;
 };
 
-export type HostMessage = {};
+export type HostMessage = never;
 export type HostedMessage = {
 	room: string;
 };
@@ -51,13 +51,13 @@ export type JoinedMessage = {
 	room: string;
 };
 
-export type LeaveMessage = {};
-export type LeftMessage = {};
+export type LeaveMessage = never;
+export type LeftMessage = never;
 
-export type StartMessage = {};
-export type StartedMessage = {};
+export type StartMessage = never;
+export type StartedMessage = never;
 
-export type TeamMessage = {};
+export type TeamMessage = never;
 
 export type WeaponMessage = {
 	weapon: TWeapon;
@@ -67,9 +67,9 @@ export type MoveMessage = {
 	direction: Direction;
 	start: boolean;
 };
-export type MovedMessage = {};
+export type MovedMessage = never;
 
-export type ShootMessage = {};
+export type ShootMessage = never;
 
 export type CellResult = {
 	x: number;
@@ -148,7 +148,7 @@ export type ErrorMessage = {
 };
 
 export type DecodeMessageReturn =
-	| ConnectedMessage
+	| WelcomeMessage
 	| HostedMessage
 	| JoinedMessage
 	| LeftMessage
@@ -160,9 +160,9 @@ export type DecodeMessageReturn =
 	| SystemMessage
 	| ErrorMessage;
 
-export type TypedConnectedMessage = {
-	data: ConnectedMessage;
-	type: Messages.MSG_CNCT;
+export type TypedWelcomeMessage = {
+	data: WelcomeMessage;
+	type: Messages.MSG_WLCM;
 };
 export type TypedHostMessage = {
 	data: HostMessage;
@@ -254,7 +254,7 @@ export type TypedErrorMessage = {
 };
 
 export type GenericServerMessage =
-	| TypedConnectedMessage
+	| TypedWelcomeMessage
 	| TypedHostMessage
 	| TypedHostedMessage
 	| TypedJoinMessage

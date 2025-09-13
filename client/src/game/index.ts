@@ -1,12 +1,13 @@
-import Input, { Mouse } from "./input.js";
-import GameMap from "./map.js";
-import Collision from "./collision.js"
-import { Weapons } from "./weapons.js";
-import { copyText } from "./utils.js";
-import { appendSystemMessage } from "./chat.js";
-import { encode, Messages, SystemMessageType, type CellResult, type ConnectedMessage, type MapMessage, type SettingsMessage, type StateMessage } from "./msgs";
-import type { Point } from "./geometry.js";
-import { Team, TWeapon } from "./consts.js";
+import Input, { Mouse } from "../input.js";
+import GameMap from "../map.js";
+import Collision from "../collision.js"
+import { Weapons } from "../weapons.js";
+import { copyText } from "../utils.js";
+import { appendSystemMessage } from "../chat.js";
+import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type SettingsMessage, type StateMessage } from "../msgs";
+import type { Point } from "../geometry.js";
+import { Team, TWeapon } from "../consts.js";
+import type Network from "../network/index.js";
 
 // Game States
 enum GamePhases {
@@ -24,7 +25,7 @@ enum Tiles {
     WallTile,
 };
 
-type GameExtras = ConnectedMessage & {
+type GameExtras = WelcomeMessage & {
     settings: SettingsMessage,
 };
 
@@ -42,11 +43,9 @@ export default class Game {
 
     settings: SettingsMessage;
 
-    myData: ConnectedMessage;
+    myData: WelcomeMessage;
 
-    constructor(public ws: WebSocket, public renderer: HTMLCanvasElement, extras: GameExtras) {
-        this.ws = ws;
-        this.renderer = renderer;
+    constructor(private network: Network, private renderer: HTMLCanvasElement, extras: GameExtras) {
         this.ctx = renderer.getContext("2d")!; // shouldn't fail ?!
 
         this.debugFrame = false;
@@ -186,133 +185,79 @@ export default class Game {
 
         // Input
         this.input.update();
+        const network = this.network;
 
         if (this.game.state.phase === GamePhases.Playing) {
             // Movement
             if (this.input.isKeyPressed("KeyW")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "up",
-                            start: true,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "up",
+                    start: true,
+                });
             }
             if (this.input.isKeyReleased("KeyW")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "up",
-                            start: false,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "up",
+                    start: false,
+                });
             }
 
             if (this.input.isKeyPressed("KeyS")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "down",
-                            start: true,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "down",
+                    start: true,
+                });
             }
             if (this.input.isKeyReleased("KeyS")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "down",
-                            start: false,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "down",
+                    start: false,
+                });
             }
 
             if (this.input.isKeyPressed("KeyA")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "left",
-                            start: true,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "left",
+                    start: true,
+                });
             }
             if (this.input.isKeyReleased("KeyA")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "left",
-                            start: false,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "left",
+                    start: false,
+                });
             }
 
             if (this.input.isKeyPressed("KeyD")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "right",
-                            start: true,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "right",
+                    start: true,
+                });
             }
             if (this.input.isKeyReleased("KeyD")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_MOVE,
-                        data: {
-                            direction: "right",
-                            start: false,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_MOVE, {
+                    direction: "right",
+                    start: false,
+                });
             }
 
             // Weapons
             if (this.input.isKeyReleased("Digit1")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_WEAPON,
-                        data: {
-                            weapon: TWeapon.WEAPON_GUN,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_WEAPON, {
+                    weapon: TWeapon.WEAPON_GUN,
+                });
             }
             if (this.input.isKeyReleased("Digit2")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_WEAPON,
-                        data: {
-                            weapon: TWeapon.WEAPON_BOMB,
-                        },
-                    })
-                );
+                network.send(Messages.MSG_WEAPON, {
+                    weapon: TWeapon.WEAPON_BOMB,
+                });
             }
 
             // Shooting
             if (this.input.isMouseDown(Mouse.Left)) {
                 const myPlayer = this.getMyPlayer();
                 if (myPlayer.cooldown <= 0) {
-                    this.ws.send(
-                        encode({
-                            type: Messages.MSG_SHOOT,
-                            data: {},
-                        })
-                    );
+                    network.send(Messages.MSG_SHOOT);
                 }
             }
         }
@@ -320,32 +265,16 @@ export default class Game {
         if (this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing) {
             // Aiming
             const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());
-
-            this.ws.send(
-                encode({
-                    type: Messages.MSG_MOUSE,
-                    data: gameCoords,
-                })
-            );
+            network.send(Messages.MSG_MOUSE, gameCoords);
         }
 
         if (this.game.state.phase === GamePhases.WaitingForPlayers || this.game.state.phase === GamePhases.GameOver) {
             // Menu
             if (this.input.isKeyReleased("KeyQ")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_START,
-                        data: {},
-                    })
-                );
+                network.send(Messages.MSG_START);
             }
             if (this.input.isKeyReleased("KeyT")) {
-                this.ws.send(
-                    encode({
-                        type: Messages.MSG_TEAM,
-                        data: {},
-                    })
-                );
+                network.send(Messages.MSG_TEAM);
             }
         }
 

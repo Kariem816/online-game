@@ -1,14 +1,14 @@
 import React, { Screen } from "./react"
 import Game from "./game";
-import * as msgs from "./msgs";
 import { appendMessage, appendSystemMessage } from "./chat";
-import { sleep } from "./utils";
+import Network from "./network";
+import { SystemMessageType, type SettingsMessage } from "./msgs";
 
 export default class Application {
     myId: number | null = null;
     myUsername: string | null = null;
 
-    settings: msgs.SettingsMessage | null = null;
+    settings: SettingsMessage | null = null;
     game: Game | null = null;
 
     lastTimestamp = 0;
@@ -16,130 +16,98 @@ export default class Application {
 
     activeScreen = Screen.Home;
 
-    ws: WebSocket;
+    network: Network;
     react: React;
 
     constructor() {
-        this.ws = new WebSocket("/ws");
-        this.ws.binaryType = "arraybuffer";
-        this.react = new React(this.ws);
+        this.network = new Network();
+        this.react = new React(this.network);
 
-        this.setupWSListeners();
+        this.setupNetworkListeners();
     }
 
-    setupWSListeners() {
-        const ws = this.ws;
+    setupNetworkListeners() {
+        const network = this.network;
         const that = this;
 
-        ws.addEventListener("open", () => {
+        network.on("connect", () => {
             console.log("Connected");
         });
-        ws.addEventListener("message", (event) => {
-            const msg = msgs.decode(event.data);
-            if (msgs.isConnectedMessage(msg)) {
-                this.myId = msg.data.id;
-                this.myUsername = msg.data.username;
-                this.react.updateUsername(this.myUsername);
-            } else if (msgs.isSettingsMessage(msg)) {
-                this.settings = msg.data;
-            } else if (msgs.isHostedMessage(msg) || msgs.isJoinedMessage(msg)) {
-                // TODO: what if we hosted or joined before we got settings or username
-                const canvas = this.react.GameScreen();
-                this.game = new Game(ws, canvas, {
-                    id: this.myId!,
-                    username: this.myUsername!,
-                    settings: this.settings!,
+
+        network.on("welcome", (msg) => {
+            that.myId = msg.id;
+            that.myUsername = msg.username;
+            that.react.updateUsername(that.myUsername);
+        });
+        network.on("settings", (msg) => {
+            that.settings = msg;
+        });
+        network.on("hosted", () => {
+            const canvas = that.react.GameScreen();
+            that.game = new Game(network, canvas, {
+                id: that.myId!,
+                username: that.myUsername!,
+                settings: that.settings!,
+            });
+        });
+        network.on("joined", () => {
+            const canvas = that.react.GameScreen();
+            that.game = new Game(network, canvas, {
+                id: that.myId!,
+                username: that.myUsername!,
+                settings: that.settings!,
+            });
+        });
+        network.on("state", (msg) => {
+            if (that.react.active !== Screen.Game) {
+                console.error("should be unreachable");
+            }
+            if (!that.game) {
+                console.error("should be unreachable");
+                return;
+            }
+
+            that.game.onStateUpdate(msg);
+            if (!that.rendering) {
+                that.rendering = true;
+                requestAnimationFrame((timestamp) => {
+                    that.lastTimestamp = timestamp;
+                    that.tick(timestamp);
                 });
-            } else if (msgs.isStateMessage(msg)) {
-                if (this.react.active !== Screen.Game) {
-                    console.error("should be unreachable");
-                }
-                if (!this.game) {
-                    console.error("should be unreachable");
-                    return;
-                }
-    
-                this.game.onStateUpdate(msg.data);
-                if (!this.rendering) {
-                    this.rendering = true;
-                    requestAnimationFrame((timestamp) => {
-                        this.lastTimestamp = timestamp;
-                        this.tick(timestamp);
-                    });
-                }
-            } else if (msgs.isMapMessage(msg)) {
-                this.game?.onMapUpdate(msg.data);
-            } else if (msgs.isLeftMessage(msg)) {
-                this.react.HomeScreen();
-                this.game = null;
-                this.activeScreen = 0;
-            } else if (msgs.isChattedMessage(msg)) {
-                appendMessage(that.game!.getUsername(msg.data.from), msg.data.message);
-            } else if (msgs.isErrorMessage(msg)) {
-                if (!appendSystemMessage(msgs.SystemMessageType.SYS_MSG_ERROR, msg.data.message)) {
-                    // TODO: find a better way to display error messages
-                    alert(msg.data.message);
-                }
-            } else if (msgs.isSystemMessage(msg)) {
-                if (!appendSystemMessage(msg.data.type, msg.data.message)) {
-                    console.log(msg.data.type, msg.data.message);
-                }
-            } else if (msgs.isShotMessage(msg)) {
-                this.game?.onShot(msg.data.cells);
-            } else {
-                console.error("Unknown message type:", msg.type);
             }
         });
-        ws.addEventListener("close", () => {
-            console.log("Disconnected");
+        network.on("map", (msg) => {
+            that.game?.onMapUpdate(msg);
+        });
+        network.on("left", () => {
+            that.react.HomeScreen();
+            that.game = null;
+            that.activeScreen = 0;
+        });
+        network.on("chatted", (msg) => {
+            appendMessage(that.game!.getUsername(msg.from), msg.message);
+        });
+        network.on("error", (msg) => {
+            if (!appendSystemMessage(SystemMessageType.SYS_MSG_ERROR, msg.message)) {
+                // TODO: find a better way to display error messages
+                alert(msg.message);
+            }
+        });
+        network.on("system", (msg) => {
+            if (!appendSystemMessage(msg.type, msg.message)) {
+                console.log(msg.type, msg.message);
+            }
+        });
+        network.on("shot", (msg) => {
+            this.game?.onShot(msg.cells);
+        });
+        network.on("disconnect", () => {
             this.react.HomeScreen();
             this.activeScreen = 0;
             this.game = null;
             this.myId = null;
             this.myUsername = null;
-            this.reconnect();
         });
-    }
-
-    async reconnect() {
-        console.log("Reconnecting...");
-
-        for (let i = 0; i < 10; i++) {
-            await sleep(1000 * i);
-            const ws = await this.actualReconnect();
-            if (ws) {
-                console.log("Reconnected");
-                this.ws = ws;
-                this.setupWSListeners();
-                this.react.updateWs(ws);
-                return;
-            }
-        }
-        console.log("Failed to reconnect");
-    }
-
-    async actualReconnect() {
-        const ws = new WebSocket("/ws");
-        ws.binaryType = "arraybuffer";
-        try {
-            await new Promise<void>((res, rej) => {
-                function onError() {
-                    rej();
-                }
-                function onOpen() {
-                    ws.removeEventListener("error", onError);
-                    ws.removeEventListener("open", onOpen); // this maybe a bad idea
-                    res();
-                }
-
-
-                ws.addEventListener("error", onError);
-                ws.addEventListener("open", onOpen);
-            });
-            return ws;
-        } catch {
-            return null;
-        }
     }
 
     tick(ts: number) {

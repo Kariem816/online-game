@@ -18,7 +18,7 @@ type GenericMessage struct {
 	Args []byte
 }
 
-type ConnectedMessage struct {
+type WelcomeMessage struct {
 	ID       types.UserID
 	Username string
 }
@@ -101,7 +101,7 @@ type ErrorMessage struct {
 }
 
 const (
-	MSG_CNCT     uint8 = iota
+	MSG_WLCM     uint8 = iota
 	MSG_HOST     uint8 = iota
 	MSG_HOSTED   uint8 = iota
 	MSG_JOIN     uint8 = iota
@@ -156,13 +156,13 @@ func ParseMessage(buf []byte) (GenericMessage, MessageError) {
 	}, MessageNoError
 }
 
-func (cm ConnectedMessage) Buffer() (*bytes.Buffer, bool) {
+func (wm WelcomeMessage) Buffer() (*bytes.Buffer, bool) {
 	buf := &bytes.Buffer{}
-	buf.WriteByte(MSG_CNCT)
+	buf.WriteByte(MSG_WLCM)
 	// binary.Write(buf, binary.LittleEndian, cm)
-	binary.Write(buf, binary.LittleEndian, cm.ID)
-	buf.WriteByte(uint8(len(cm.Username)))
-	buf.WriteString(cm.Username)
+	binary.Write(buf, binary.LittleEndian, wm.ID)
+	buf.WriteByte(uint8(len(wm.Username)))
+	buf.WriteString(wm.Username)
 
 	return buf, true
 }

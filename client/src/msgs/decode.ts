@@ -2,7 +2,7 @@ import { Messages, SystemMessageType } from "./types";
 
 import type {
 	ChattedMessage,
-	ConnectedMessage,
+	WelcomeMessage,
 	DecodeMessageReturn,
 	ErrorMessage,
 	GenericServerMessage,
@@ -15,7 +15,7 @@ import type {
 	SettingsMessage,
 	SystemMessage,
 	TypedChattedMessage,
-	TypedConnectedMessage,
+	TypedWelcomeMessage,
 	TypedErrorMessage,
 	TypedHostedMessage,
 	TypedJoinedMessage,
@@ -91,13 +91,13 @@ function decodeMsgData(
 	msgType: Messages
 ): DecodeMessageReturn {
 	switch (msgType) {
-		case Messages.MSG_CNCT: {
+		case Messages.MSG_WLCM: {
 			const id = view.getInt16();
 			const username = view.getString(view.getUint8());
 			return {
 				id,
 				username,
-			} as ConnectedMessage;
+			} as WelcomeMessage;
 		}
 		case Messages.MSG_HOSTED: {
 			const room = view.getString(4);
@@ -241,7 +241,7 @@ export function decode(msg: ArrayBuffer): GenericServerMessage {
 	const view = new StatedDataView(new DataView(msg, 1));
 
 	switch (msgType) {
-		case Messages.MSG_CNCT:
+		case Messages.MSG_WLCM:
 		case Messages.MSG_HOSTED:
 		case Messages.MSG_JOINED:
 		case Messages.MSG_LEFT:
@@ -271,10 +271,10 @@ export function decode(msg: ArrayBuffer): GenericServerMessage {
 	}
 }
 
-export function isConnectedMessage(
+export function isWelcomeMessage(
 	message: GenericServerMessage
-): message is TypedConnectedMessage {
-	return message.type === Messages.MSG_CNCT;
+): message is TypedWelcomeMessage {
+	return message.type === Messages.MSG_WLCM;
 }
 
 export function isHostedMessage(
