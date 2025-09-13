@@ -27,12 +27,23 @@ enum Tiles {
 
 type GameExtras = WelcomeMessage;
 
+const dts: number[] = [];
+function calcFPS(dt: number): number {
+    if (dts.push(dt) > 100) {
+        dts.shift();
+    }
+    const dtAvg = dts.reduce((acc, dt) => acc + dt, 0) / dts.length;
+    return Math.round(1 / dtAvg);
+}
+
 export default class Game {
     isServerUpdated = false;
 
     ctx: CanvasRenderingContext2D;
 
     debugFrame: boolean;
+    fpsCounter = false;
+    fps: number = 0;
 
     input: Input;
 
@@ -128,6 +139,8 @@ export default class Game {
             console.log({ state: this.game, serverUpdated: this.isServerUpdated });
             this.debugFrame = false;
         }
+
+        this.fps = calcFPS(dt);
 
         // Players State
         if (this.game.state.phase === GamePhases.Playing && !this.isServerUpdated) {
@@ -280,6 +293,9 @@ export default class Game {
         if (this.input.isKeyReleased("KeyR")) {
             this.debugFrame = true;
         }
+        if (this.input.isKeyReleased("KeyF")) {
+            this.fpsCounter = !this.fpsCounter;
+        }
     }
 
     render() {
@@ -366,6 +382,12 @@ export default class Game {
             const isMe = player.user.id === this.myData.id;
             Weapons[player.weapon].drawIcon(this.ctx, theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"], start, padding / 2, playerSize, playerSize);
             start += playerSize + padding;
+        }
+
+        if (this.fpsCounter) {
+            // top right corner
+            this.ctx.fillStyle = theme.colors.foreground;
+            this.ctx.fillText(`${this.fps}`, wRest + wOffset / 2, hOffset / 2);
         }
 
         // Map
