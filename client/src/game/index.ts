@@ -263,6 +263,16 @@ export default class Game {
                     weapon: TWeapon.WEAPON_BOMB,
                 });
             }
+            if (this.input.isKeyReleased("Digit3")) {
+                network.send(Messages.MSG_WEAPON, {
+                    weapon: TWeapon.WEAPON_SHOTGUN,
+                });
+            }
+            if (this.input.isKeyReleased("Digit4")) {
+                network.send(Messages.MSG_WEAPON, {
+                    weapon: TWeapon.WEAPON_UZI,
+                });
+            }
 
             // Shooting
             if (this.input.isMouseDown(Mouse.Left)) {

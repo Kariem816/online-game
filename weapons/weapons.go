@@ -25,21 +25,26 @@ type Weapon interface {
 type BaseWeapon struct {
 	id       types.WeaponID
 	cooldown time.Duration
+	radius   float32
 	// holdable    bool
 	// activated   bool
 	// activatedAt time.Time
 }
 
 const (
-	WEAPON_GUN   types.WeaponID = iota
-	WEAPON_BOMB                 = iota
-	WEAPON_COUNT                = iota
+	WEAPON_GUN     types.WeaponID = iota
+	WEAPON_BOMB                   = iota
+	WEAPON_SHOTGUN                = iota
+	WEAPON_UZI                    = iota
+	WEAPON_COUNT                  = iota
 )
 
 func List() []types.SettingsMessageWeapon {
 	weapons := []Weapon{
 		NewGun(),
 		NewBomb(),
+		NewShotgun(),
+		NewUzi(),
 	}
 	ws := make([]types.SettingsMessageWeapon, len(weapons))
 	for i, weapon := range weapons {

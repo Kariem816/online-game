@@ -23,6 +23,8 @@ export enum GamePhase {
 export enum TWeapon {
 	WEAPON_GUN,
 	WEAPON_BOMB,
+	WEAPON_SHOTGUN,
+	WEAPON_UZI,
 };
 
 export const theme = {

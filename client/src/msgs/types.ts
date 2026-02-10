@@ -134,6 +134,7 @@ export type MouseMessage = {
 export type SettingsMessageWeapon = {
 	id: number;
 	cooldown: number;
+	radius: number;
 	name: string;
 };
 

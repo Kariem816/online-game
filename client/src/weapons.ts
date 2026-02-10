@@ -12,6 +12,41 @@ type TWeapons = {
     }
 }
 
+function drawUnknown(ctx: CanvasRenderingContext2D, color: string, cw: number, ch: number, pc: { x: number, y: number }, theta: number) {
+    const spx = pc.x * cw; // center of the player in canvas coordinates
+    const spy = pc.y * ch; // center of the player in canvas coordinates
+
+    const stickLen = ch;
+    const epx = spx + stickLen * Math.cos(theta);
+    const epy = spy + stickLen * Math.sin(theta);
+
+    ctx.fillStyle = color;
+    ctx.font = `${ch}px`;
+    ctx.fillText("?", epx, epy);
+}
+
+function drawIconUnknown(ctx: CanvasRenderingContext2D, color1: string, color2: string, x: number, y: number, w: number, h: number) {
+    ctx.save();
+
+    ctx.translate(x, y);
+    ctx.strokeStyle = color2;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, h, w * 0.1);
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.save();
+
+    ctx.fillStyle = color1;
+    ctx.font = `${h*2}px`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("?", x + w / 2, y + h / 2);
+
+    ctx.restore();
+}
+
 export const Weapons: TWeapons = {
     [TWeapon.WEAPON_GUN]: {
         draw: (ctx, color, cw, ch, pc, theta) => {
@@ -101,5 +136,13 @@ export const Weapons: TWeapons = {
 
             ctx.restore()
         }
+    },
+    [TWeapon.WEAPON_SHOTGUN]: {
+        draw: drawUnknown,
+        drawIcon: drawIconUnknown,
+    },
+    [TWeapon.WEAPON_UZI]: {
+        draw: drawUnknown,
+        drawIcon: drawIconUnknown,
     },
 };

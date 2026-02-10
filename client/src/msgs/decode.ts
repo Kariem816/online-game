@@ -99,6 +99,7 @@ function decodeMsgData(
 				weapons[i] = {
 					id: view.getUint8(),
 					cooldown: view.getUint32(),
+					radius: view.getFloat32(),
 					name: view.getString(view.getUint8()),
 				};
 			}

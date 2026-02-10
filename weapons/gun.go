@@ -18,6 +18,7 @@ type Gun struct {
 var baseGun = BaseWeapon{
 	id:       WEAPON_GUN,
 	cooldown: 500 * time.Millisecond,
+	radius:   1,
 }
 
 func NewGun() *Gun {
@@ -55,8 +56,8 @@ func (g *Gun) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector
 	px := pos.X + 0.5
 	py := pos.Y + 0.5
 
-	x := px + math32.Cos(theta)
-	y := py + math32.Sin(theta)
+	x := px + baseGun.radius*math32.Cos(theta)
+	y := py + baseGun.radius*math32.Sin(theta)
 	defer g.setCooldown()
 	return []omath.IVector2{{X: int32(x), Y: int32(y)}}
 }
@@ -69,6 +70,7 @@ func (g *Gun) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
 		ID:       g.ID(),
 		Cooldown: uint32(g.Cooldown().Milliseconds()),
+		Radius:   g.radius,
 		Name:     g.Name(),
 	}
 }

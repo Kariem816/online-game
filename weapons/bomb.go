@@ -15,11 +15,10 @@ type Bomb struct {
 	cooldownLeft time.Duration
 }
 
-const bombRange = 4
-
 var baseBomb = BaseWeapon{
 	id:       WEAPON_BOMB,
 	cooldown: 3000 * time.Millisecond,
+	radius:   4,
 }
 
 func NewBomb() *Bomb {
@@ -58,8 +57,8 @@ func (b *Bomb) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVecto
 	px := pos.X + 0.5
 	py := pos.Y + 0.5
 
-	cx := px + bombRange*math32.Cos(theta)
-	cy := py + bombRange*math32.Sin(theta)
+	cx := px + baseBomb.radius*math32.Cos(theta)
+	cy := py + baseBomb.radius*math32.Sin(theta)
 	defer b.setCooldown()
 	return []omath.IVector2{
 		{X: int32(cx - 1), Y: int32(cy)},
@@ -78,6 +77,7 @@ func (b *Bomb) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
 		ID:       b.ID(),
 		Cooldown: uint32(b.Cooldown().Milliseconds()),
+		Radius:   b.radius,
 		Name:     b.Name(),
 	}
 }

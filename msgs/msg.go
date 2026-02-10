@@ -163,6 +163,7 @@ func (wm WelcomeMessage) Buffer() (*bytes.Buffer, bool) {
 	for _, w := range wm.Settings.Weapons {
 		binary.Write(buf, binary.LittleEndian, w.ID)
 		binary.Write(buf, binary.LittleEndian, w.Cooldown)
+		binary.Write(buf, binary.LittleEndian, w.Radius)
 		binary.Write(buf, binary.LittleEndian, uint8(len(w.Name)))
 		buf.WriteString(w.Name)
 	}
