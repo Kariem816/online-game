@@ -32,17 +32,17 @@ type BaseWeapon struct {
 }
 
 const (
-	WEAPON_GUN     types.WeaponID = iota
-	WEAPON_BOMB                   = iota
-	WEAPON_SHOTGUN                = iota
-	WEAPON_UZI                    = iota
-	WEAPON_COUNT                  = iota
+	WEAPON_GUN            types.WeaponID = iota
+	WEAPON_ROCKETLAUNCHER                = iota
+	WEAPON_SHOTGUN                       = iota
+	WEAPON_UZI                           = iota
+	WEAPON_COUNT                         = iota
 )
 
 func List() []types.SettingsMessageWeapon {
 	weapons := []Weapon{
 		NewGun(),
-		NewBomb(),
+		NewRocketLauncher(),
 		NewShotgun(),
 		NewUzi(),
 	}

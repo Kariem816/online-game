@@ -22,7 +22,7 @@ export enum GamePhase {
 
 export enum TWeapon {
 	WEAPON_GUN,
-	WEAPON_BOMB,
+	WEAPON_ROCKETLAUNCHER,
 	WEAPON_SHOTGUN,
 	WEAPON_UZI,
 };

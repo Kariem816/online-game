@@ -260,7 +260,7 @@ export default class Game {
             }
             if (this.input.isKeyReleased("Digit2")) {
                 network.send(Messages.MSG_WEAPON, {
-                    weapon: TWeapon.WEAPON_BOMB,
+                    weapon: TWeapon.WEAPON_ROCKETLAUNCHER,
                 });
             }
             if (this.input.isKeyReleased("Digit3")) {

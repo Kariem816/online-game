@@ -146,8 +146,8 @@ func (p *Player) ChangeWeapon(weaponID types.WeaponID) {
 	switch weaponID {
 	case weapons.WEAPON_GUN:
 		p.Weapon = weapons.NewGun()
-	case weapons.WEAPON_BOMB:
-		p.Weapon = weapons.NewBomb()
+	case weapons.WEAPON_ROCKETLAUNCHER:
+		p.Weapon = weapons.NewRocketLauncher()
 	case weapons.WEAPON_SHOTGUN:
 		p.Weapon = weapons.NewShotgun()
 	case weapons.WEAPON_UZI:

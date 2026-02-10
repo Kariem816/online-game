@@ -92,7 +92,7 @@ export const Weapons: TWeapons = {
             ctx.restore();
         }
     },
-    [TWeapon.WEAPON_BOMB]: {
+    [TWeapon.WEAPON_ROCKETLAUNCHER]: {
         draw: (ctx, color, cw, ch, pc, theta) => {
             const spx = pc.x * cw; // center of the player in canvas coordinates
             const spy = pc.y * ch; // center of the player in canvas coordinates
