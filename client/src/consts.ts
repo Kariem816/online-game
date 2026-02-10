@@ -25,6 +25,7 @@ export enum TWeapon {
 	WEAPON_ROCKETLAUNCHER,
 	WEAPON_SHOTGUN,
 	WEAPON_UZI,
+	WEAPON_BOMB,
 };
 
 export const theme = {

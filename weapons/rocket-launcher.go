@@ -28,38 +28,38 @@ func NewRocketLauncher() *RocketLauncher {
 	}
 }
 
-func (b *RocketLauncher) ID() types.WeaponID {
-	return b.id
+func (l *RocketLauncher) ID() types.WeaponID {
+	return l.id
 }
 
-func (b *RocketLauncher) Name() string {
+func (l *RocketLauncher) Name() string {
 	return "Rocket Launcher"
 }
 
-func (b *RocketLauncher) Update() {
-	if b.cooldownLeft > 0 {
-		b.cooldownLeft -= consts.GameTick
+func (l *RocketLauncher) Update() {
+	if l.cooldownLeft > 0 {
+		l.cooldownLeft -= consts.GameTick
 	}
-	if b.cooldownLeft < 0 {
-		b.cooldownLeft = 0
+	if l.cooldownLeft < 0 {
+		l.cooldownLeft = 0
 	}
 }
 
-func (b *RocketLauncher) Cooldown() time.Duration {
-	return b.cooldown
+func (l *RocketLauncher) Cooldown() time.Duration {
+	return l.cooldown
 }
 
-func (b *RocketLauncher) CooldownLeft() time.Duration {
-	return b.cooldownLeft
+func (l *RocketLauncher) CooldownLeft() time.Duration {
+	return l.cooldownLeft
 }
 
-func (b *RocketLauncher) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
+func (l *RocketLauncher) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
 	px := pos.X + 0.5
 	py := pos.Y + 0.5
 
 	cx := px + baseRocketLauncher.radius*math32.Cos(theta)
 	cy := py + baseRocketLauncher.radius*math32.Sin(theta)
-	defer b.setCooldown()
+	defer l.setCooldown()
 	return []omath.IVector2{
 		{X: int32(cx - 1), Y: int32(cy)},
 		{X: int32(cx), Y: int32(cy - 1)},
@@ -69,15 +69,15 @@ func (b *RocketLauncher) Shoot(pos omath.Vector2, r float32, theta float32) []om
 	}
 }
 
-func (b *RocketLauncher) setCooldown() {
-	b.cooldownLeft = b.cooldown
+func (l *RocketLauncher) setCooldown() {
+	l.cooldownLeft = l.cooldown
 }
 
-func (b *RocketLauncher) ToSettingsMessage() types.SettingsMessageWeapon {
+func (l *RocketLauncher) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       b.ID(),
-		Cooldown: uint32(b.Cooldown().Milliseconds()),
-		Radius:   b.radius,
-		Name:     b.Name(),
+		ID:       l.ID(),
+		Cooldown: uint32(l.Cooldown().Milliseconds()),
+		Radius:   l.radius,
+		Name:     l.Name(),
 	}
 }

@@ -28,52 +28,52 @@ func NewUzi() *Uzi {
 	}
 }
 
-func (g *Uzi) ID() types.WeaponID {
-	return g.id
+func (u *Uzi) ID() types.WeaponID {
+	return u.id
 }
 
-func (g *Uzi) Name() string {
+func (u *Uzi) Name() string {
 	return "Uzi"
 }
 
-func (g *Uzi) Update() {
-	if g.cooldownLeft > 0 {
-		g.cooldownLeft -= consts.GameTick
+func (u *Uzi) Update() {
+	if u.cooldownLeft > 0 {
+		u.cooldownLeft -= consts.GameTick
 	}
-	if g.cooldownLeft < 0 {
-		g.cooldownLeft = 0
+	if u.cooldownLeft < 0 {
+		u.cooldownLeft = 0
 	}
 }
 
-func (g *Uzi) Cooldown() time.Duration {
-	return g.cooldown
+func (u *Uzi) Cooldown() time.Duration {
+	return u.cooldown
 }
-func (g *Uzi) CooldownLeft() time.Duration {
-	return g.cooldownLeft
+func (u *Uzi) CooldownLeft() time.Duration {
+	return u.cooldownLeft
 }
 
-func (g *Uzi) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
+func (u *Uzi) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
 	px := pos.X + 0.5
 	py := pos.Y + 0.5
 
 	x := px + baseUzi.radius*math32.Cos(theta)
 	y := py + baseUzi.radius*math32.Sin(theta)
 
-	defer g.setCooldown()
+	defer u.setCooldown()
 	return []omath.IVector2{
 		{X: int32(x), Y: int32(y)},
 	}
 }
 
-func (g *Uzi) setCooldown() {
-	g.cooldownLeft = g.cooldown
+func (u *Uzi) setCooldown() {
+	u.cooldownLeft = u.cooldown
 }
 
-func (g *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {
+func (u *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       g.ID(),
-		Cooldown: uint32(g.Cooldown().Milliseconds()),
-		Radius:   g.radius,
-		Name:     g.Name(),
+		ID:       u.ID(),
+		Cooldown: uint32(u.Cooldown().Milliseconds()),
+		Radius:   u.radius,
+		Name:     u.Name(),
 	}
 }

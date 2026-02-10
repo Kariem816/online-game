@@ -36,6 +36,7 @@ const (
 	WEAPON_ROCKETLAUNCHER                = iota
 	WEAPON_SHOTGUN                       = iota
 	WEAPON_UZI                           = iota
+	WEAPON_BOMB                          = iota
 	WEAPON_COUNT                         = iota
 )
 
@@ -45,6 +46,7 @@ func List() []types.SettingsMessageWeapon {
 		NewRocketLauncher(),
 		NewShotgun(),
 		NewUzi(),
+		NewBomb(),
 	}
 	ws := make([]types.SettingsMessageWeapon, len(weapons))
 	for i, weapon := range weapons {

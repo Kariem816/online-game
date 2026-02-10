@@ -93,6 +93,18 @@ export const Weapons: TWeapons = {
         }
     },
     [TWeapon.WEAPON_ROCKETLAUNCHER]: {
+        draw: drawUnknown,
+        drawIcon: drawIconUnknown, 
+    },
+    [TWeapon.WEAPON_SHOTGUN]: {
+        draw: drawUnknown,
+        drawIcon: drawIconUnknown,
+    },
+    [TWeapon.WEAPON_UZI]: {
+        draw: drawUnknown,
+        drawIcon: drawIconUnknown,
+    },
+    [TWeapon.WEAPON_BOMB]: {
         draw: (ctx, color, cw, ch, pc, theta) => {
             const spx = pc.x * cw; // center of the player in canvas coordinates
             const spy = pc.y * ch; // center of the player in canvas coordinates
@@ -135,14 +147,6 @@ export const Weapons: TWeapons = {
             ctx.fill();
 
             ctx.restore()
-        }
-    },
-    [TWeapon.WEAPON_SHOTGUN]: {
-        draw: drawUnknown,
-        drawIcon: drawIconUnknown,
-    },
-    [TWeapon.WEAPON_UZI]: {
-        draw: drawUnknown,
-        drawIcon: drawIconUnknown,
+        },
     },
 };

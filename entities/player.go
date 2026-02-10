@@ -152,5 +152,7 @@ func (p *Player) ChangeWeapon(weaponID types.WeaponID) {
 		p.Weapon = weapons.NewShotgun()
 	case weapons.WEAPON_UZI:
 		p.Weapon = weapons.NewUzi()
+	case weapons.WEAPON_BOMB:
+		p.Weapon = weapons.NewBomb()
 	}
 }
