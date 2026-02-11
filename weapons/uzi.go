@@ -17,7 +17,7 @@ type Uzi struct {
 
 var baseUzi = BaseWeapon{
 	id:       WEAPON_SHOTGUN,
-	cooldown: 150 * time.Millisecond,
+	cooldown: 200 * time.Millisecond,
 	radius:   10,
 }
 

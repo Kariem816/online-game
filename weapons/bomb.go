@@ -60,10 +60,14 @@ func (b *Bomb) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVecto
 	cy := py + baseBomb.radius*math32.Sin(theta)
 	defer b.setCooldown()
 	return []omath.IVector2{
+		{X: int32(cx - 2), Y: int32(cy)},
+		{X: int32(cx + 2), Y: int32(cy)},
 		{X: int32(cx - 1), Y: int32(cy - 1)},
 		{X: int32(cx - 1), Y: int32(cy + 1)},
 		{X: int32(cx + 1), Y: int32(cy - 1)},
 		{X: int32(cx + 1), Y: int32(cy + 1)},
+		{X: int32(cx), Y: int32(cy - 2)},
+		{X: int32(cx), Y: int32(cy + 2)},
 	}
 }
 
