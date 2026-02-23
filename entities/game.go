@@ -7,6 +7,7 @@ import (
 	"online-game/consts"
 	"online-game/msgs"
 	"online-game/types"
+	"slices"
 	"strings"
 	"time"
 )
@@ -233,83 +234,86 @@ func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
 	}
 }
 
-func (g *Game) Shoot(userId types.UserID) ([]types.CellResult, error) {
+func (g *Game) HoldUserWeapon(userId types.UserID) {
 	if g.State.Phase != Playing {
-		return []types.CellResult{}, nil
+		return
 	}
-
 	player := g.GetPlayer(userId)
-	if player == nil {
-		return []types.CellResult{}, errors.New("player not found")
+	if player != nil {
+		player.Weapon.Hold()
 	}
-
-	if player.Weapon.CooldownLeft() > 0 {
-		return []types.CellResult{}, nil
-	}
-	attacked := player.Shoot()
-
-	if len(attacked) == 0 {
-		return []types.CellResult{}, nil
-	}
-
-	results := make([]types.CellResult, len(attacked))
-	for i, tile := range attacked {
-		x, y := tile.X, tile.Y
-		tile := Get(&g.State.GameMap, x, y)
-		if tile == WallTile {
-			continue
-		}
-
-		switch tile {
-		case TeamATile:
-			g.State.ScoreA--
-		case TeamBTile:
-			g.State.ScoreB--
-		}
-
-		var newTile types.Tile
-		switch player.Team {
-		case TeamA:
-			newTile = TeamATile
-			g.State.ScoreA++
-		case TeamB:
-			newTile = TeamBTile
-			g.State.ScoreB++
-		}
-		Set(&g.State.GameMap, x, y, newTile)
-
-		results[i] = types.CellResult{
-			X:     x,
-			Y:     y,
-			State: newTile,
-		}
-	}
-
-	return results, nil
 }
 
-func (g *Game) MoveMouse(userId types.UserID, dx, dy int32) {
+func (g *Game) ReleaseUserWeapon(userId types.UserID) {
+	if g.State.Phase != Playing {
+		return
+	}
+	player := g.GetPlayer(userId)
+	if player != nil {
+		player.Weapon.Release()
+	}
+}
+
+func (g *Game) AimUserTo(userId types.UserID, dx, dy int32) {
 	if !g.Started() {
 		return
 	}
 	player := g.GetPlayer(userId)
 	if player != nil {
-		player.MoveMouse(dx, dy)
+		player.AimTo(dx, dy)
 	}
 }
 
-func (g *Game) Update() {
+func (g *Game) Update() []types.CellResult {
 	if !g.Started() {
-		return
+		return []types.CellResult{}
 	}
 
+	cells := make([]types.CellResult, 0)
 	gameMap := g.State.GameMap
 	for _, player := range g.Players {
 		player.Update(&gameMap)
+		attacked := player.Weapon.Update()
+
+		cells = slices.Grow(cells, len(attacked))
+		for _, tile := range attacked {
+			x, y := tile.X, tile.Y
+			tile := Get(&g.State.GameMap, x, y)
+			if tile == WallTile {
+				continue
+			}
+
+			switch tile {
+			case TeamATile:
+				g.State.ScoreA--
+			case TeamBTile:
+				g.State.ScoreB--
+			}
+
+			var newTile types.Tile
+			switch player.Team {
+			case TeamA:
+				newTile = TeamATile
+				g.State.ScoreA++
+			case TeamB:
+				newTile = TeamBTile
+				g.State.ScoreB++
+			}
+			Set(&g.State.GameMap, x, y, newTile)
+
+			cells = append(cells, types.CellResult{
+				X:     x,
+				Y:     y,
+				State: newTile,
+			})
+		}
 	}
+
 	if time.Since(g.StartedAt) > consts.GameDuration {
 		g.Finish()
 	}
+
+	return cells
 }
 
 func (g *Game) Finish() {

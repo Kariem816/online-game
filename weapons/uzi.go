@@ -6,67 +6,57 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
-
-	"github.com/chewxy/math32"
 )
 
 type Uzi struct {
 	BaseWeapon
-	cooldownLeft time.Duration
 }
 
+const UziCooldown = 200 * time.Millisecond
+
 var baseUzi = BaseWeapon{
-	id:       WEAPON_SHOTGUN,
-	cooldown: 200 * time.Millisecond,
+	id:       WEAPON_UZI,
+	cooldown: UziCooldown,
 	radius:   10,
 }
 
 func NewUzi() *Uzi {
 	return &Uzi{
-		BaseWeapon:   baseUzi,
-		cooldownLeft: baseUzi.cooldown,
+		BaseWeapon: baseUzi,
 	}
-}
-
-func (u *Uzi) ID() types.WeaponID {
-	return u.id
 }
 
 func (u *Uzi) Name() string {
 	return "Uzi"
 }
 
-func (u *Uzi) Update() {
-	if u.cooldownLeft > 0 {
-		u.cooldownLeft -= consts.GameTick
+func (u *Uzi) Update() []omath.IVector2 {
+	if u.cooldown > 0 {
+		u.cooldown -= consts.GameTick
 	}
-	if u.cooldownLeft < 0 {
-		u.cooldownLeft = 0
+	if u.cooldown < 0 {
+		u.cooldown = 0
 	}
+
+	if u.held && u.cooldown == 0 {
+		return u.shoot()
+	}
+	return []omath.IVector2{}
 }
 
 func (u *Uzi) Cooldown() time.Duration {
-	return u.cooldown
-}
-func (u *Uzi) CooldownLeft() time.Duration {
-	return u.cooldownLeft
+	return UziCooldown
 }
 
-func (u *Uzi) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
-	px := pos.X + 0.5
-	py := pos.Y + 0.5
-
-	x := px + baseUzi.radius*math32.Cos(theta)
-	y := py + baseUzi.radius*math32.Sin(theta)
-
+func (u *Uzi) shoot() []omath.IVector2 {
 	defer u.setCooldown()
 	return []omath.IVector2{
-		{X: int32(x), Y: int32(y)},
+		u.hitCenter,
 	}
 }
 
 func (u *Uzi) setCooldown() {
-	u.cooldownLeft = u.cooldown
+	u.cooldown = UziCooldown
 }
 
 func (u *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {

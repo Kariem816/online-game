@@ -218,9 +218,10 @@ function decodeMsgData(
 		case Messages.MSG_START:
 		case Messages.MSG_TEAM:
 		case Messages.MSG_MOVE:
-		case Messages.MSG_SHOOT:
+		case Messages.MSG_MOUSEPRESS:
+		case Messages.MSG_MOUSERELEASE:
+		case Messages.MSG_MOUSEMOVE:
 		case Messages.MSG_CHAT:
-		case Messages.MSG_MOUSE:
 		default:
 			throw new Error("Not Recivable " + Messages[msgType]);
 	}
@@ -256,9 +257,10 @@ export function decode(msg: ArrayBuffer): GenericServerMessage {
 		case Messages.MSG_START:
 		case Messages.MSG_TEAM:
 		case Messages.MSG_MOVE:
-		case Messages.MSG_SHOOT:
+		case Messages.MSG_MOUSEPRESS:
+		case Messages.MSG_MOUSERELEASE:
+		case Messages.MSG_MOUSEMOVE:
 		case Messages.MSG_CHAT:
-		case Messages.MSG_MOUSE:
 		default:
 			throw new Error("Not Recivable " + Messages[msgType]);
 	}

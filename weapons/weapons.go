@@ -5,30 +5,57 @@ import (
 
 	"online-game/types"
 	"online-game/types/omath"
+
+	"github.com/chewxy/math32"
 )
 
 type Weapon interface {
 	ID() types.WeaponID
 	Name() string
-	Update()
-	// GetIsCooldown() bool
+	Update() []omath.IVector2
 	Cooldown() time.Duration
 	CooldownLeft() time.Duration
-	// GetIsHoldable() bool
-	// Props() map[string]interface{}
-	Shoot(pos omath.Vector2, r float32, thata float32) []omath.IVector2
-	// PhantomShoot(pos, loc omath.Vector2) ([]types.CellResult, error) // doesn't fire cooldown
+	IsHeld() bool
+	Hold()
+	Release()
+	Aim(pos omath.Vector2, r float32, theta float32)
 
 	ToSettingsMessage() types.SettingsMessageWeapon
 }
 
 type BaseWeapon struct {
-	id       types.WeaponID
-	cooldown time.Duration
-	radius   float32
-	// holdable    bool
-	// activated   bool
-	// activatedAt time.Time
+	id        types.WeaponID
+	cooldown  time.Duration
+	radius    float32
+	held      bool
+	hitCenter omath.IVector2
+}
+
+func (w *BaseWeapon) ID() types.WeaponID {
+	return w.id
+}
+
+func (w *BaseWeapon) CooldownLeft() time.Duration {
+	return w.cooldown
+}
+
+func (w *BaseWeapon) IsHeld() bool {
+	return w.held
+}
+
+func (w *BaseWeapon) Hold() {
+	w.held = true
+}
+
+func (w *BaseWeapon) Release() {
+	w.held = false
+}
+
+func (w *BaseWeapon) Aim(pos omath.Vector2, r float32, theta float32) {
+	w.hitCenter = omath.IVector2{
+		X: int32(pos.X + 0.5 + w.radius*math32.Cos(theta)),
+		Y: int32(pos.Y + 0.5 + w.radius*math32.Sin(theta)),
+	}
 }
 
 const (
@@ -42,11 +69,11 @@ const (
 
 func List() []types.SettingsMessageWeapon {
 	weapons := []Weapon{
+		NewBomb(),
 		NewGun(),
 		NewRocketLauncher(),
 		NewShotgun(),
 		NewUzi(),
-		NewBomb(),
 	}
 	ws := make([]types.SettingsMessageWeapon, len(weapons))
 	for i, weapon := range weapons {

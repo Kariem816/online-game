@@ -280,18 +280,18 @@ export default class Game {
             }
 
             // Shooting
-            if (this.input.isMouseDown(Mouse.Left)) {
-                const myPlayer = this.getMyPlayer();
-                if (myPlayer.cooldown <= 0) {
-                    network.send(Messages.MSG_SHOOT);
-                }
+            if (this.input.isMousePressed(Mouse.Left)) {
+                network.send(Messages.MSG_MOUSEPRESS);
+            }
+            if (this.input.isMouseReleased(Mouse.Left)) {
+                network.send(Messages.MSG_MOUSERELEASE);
             }
         }
 
         if (this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing) {
             // Aiming
             const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());
-            network.send(Messages.MSG_MOUSE, gameCoords);
+            network.send(Messages.MSG_MOUSEMOVE, gameCoords);
         }
 
         if (this.game.state.phase === GamePhases.WaitingForPlayers || this.game.state.phase === GamePhases.GameOver) {

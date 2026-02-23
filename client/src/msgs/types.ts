@@ -15,13 +15,14 @@ export enum Messages {
 	MSG_WEAPON,
 	MSG_MOVE,
 	MSG_MOVED,
-	MSG_SHOOT,
+	MSG_MOUSEPRESS,
+	MSG_MOUSERELEASE,
+	MSG_MOUSEMOVE,
 	MSG_SHOT,
 	MSG_CHAT,
 	MSG_CHATTED,
 	MSG_MAP,
 	MSG_STATE,
-	MSG_MOUSE,
 	MSG_SYSTEM,
 	MSG_ERROR,
 	length,
@@ -75,7 +76,12 @@ export type MoveMessage = {
 };
 export type MovedMessage = undefined;
 
-export type ShootMessage = undefined;
+export type MousePressMessage = undefined;
+export type MouseReleaseMessage = undefined;
+export type MouseMoveMessage = {
+	x: number;
+	y: number;
+};
 
 export type CellResult = {
 	x: number;
@@ -124,11 +130,6 @@ export type StateMessage = {
 		theta: number;
 		cooldown: number;
 	}[];
-};
-
-export type MouseMessage = {
-	x: number;
-	y: number;
 };
 
 export type SettingsMessageWeapon = {
@@ -210,9 +211,17 @@ export type TypedMovedMessage = {
 	data: MovedMessage;
 	type: Messages.MSG_MOVED;
 };
-export type TypedShootMessage = {
-	data: ShootMessage;
-	type: Messages.MSG_SHOOT;
+export type TypedMousePressMessage = {
+	data: MousePressMessage;
+	type: Messages.MSG_MOUSEPRESS;
+};
+export type TypedMouseReleaseMessage = {
+	data: MouseReleaseMessage;
+	type: Messages.MSG_MOUSERELEASE;
+};
+export type TypedMouseMoveMessage = {
+	data: MouseMoveMessage;
+	type: Messages.MSG_MOUSEMOVE;
 };
 export type TypedShotMessage = {
 	data: ShotMessage;
@@ -234,10 +243,6 @@ export type TypedStateMessage = {
 	data: StateMessage;
 	type: Messages.MSG_STATE;
 };
-export type TypedMouseMessage = {
-	data: MouseMessage;
-	type: Messages.MSG_MOUSE;
-};
 export type TypedSystemMessage = {
 	data: SystemMessage;
 	type: Messages.MSG_SYSTEM;
@@ -249,24 +254,28 @@ export type TypedErrorMessage = {
 
 export type GenericServerMessage =
 	| TypedWelcomeMessage
-	| TypedHostMessage
 	| TypedHostedMessage
-	| TypedJoinMessage
 	| TypedJoinedMessage
-	| TypedLeaveMessage
 	| TypedLeftMessage
-	| TypedStartMessage
 	| TypedStartedMessage
-	| TypedTeamMessage
-	| TypedWeaponMessage
-	| TypedMoveMessage
 	| TypedMovedMessage
-	| TypedShootMessage
 	| TypedShotMessage
-	| TypedChatMessage
 	| TypedChattedMessage
 	| TypedMapMessage
 	| TypedStateMessage
-	| TypedMouseMessage
 	| TypedSystemMessage
 	| TypedErrorMessage;
+
+export type GenericClientMessage =
+	| TypedHostMessage
+	| TypedJoinMessage
+	| TypedLeaveMessage
+	| TypedStartMessage
+	| TypedTeamMessage
+	| TypedWeaponMessage
+	| TypedMoveMessage
+	| TypedMousePressMessage
+	| TypedMouseReleaseMessage
+	| TypedMouseMoveMessage
+	| TypedChatMessage;
+	

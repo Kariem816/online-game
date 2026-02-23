@@ -22,7 +22,7 @@ type Player struct {
 	Vel    omath.IVector2
 	// for some god only knows reason, this contains r,theta of the mouse diff from player pos, see MoveMouse(x, y) for more
 	// consider changing the ds to reflect this
-	Mouse omath.Vector2
+	Mouse omath.Polar
 }
 type Players []*Player
 
@@ -41,7 +41,7 @@ func (p *Player) ToStateMessagePlayer() types.StateMessagePlayer {
 		Weapon:   p.Weapon.ID(),
 		Pos:      p.Pos,
 		Vel:      p.Vel,
-		Theta:    p.Mouse.Y,
+		Theta:    p.Mouse.Theta,
 		Cooldown: p.Cooldown(),
 		User: types.StateMessageUser{
 			ID:       p.User.ID,
@@ -79,12 +79,14 @@ func (p *Player) Move(direction string, start bool) {
 	p.Vel.Y = int32(math32.Min(math32.Max(float32(p.Vel.Y), -1), 1))
 }
 
-func (p *Player) MoveMouse(x, y int32) {
+func (p *Player) AimTo(x, y int32) {
 	dx := float32(x) - p.Pos.X
 	dy := float32(y) - p.Pos.Y
 
-	p.Mouse.X = math32.Sqrt(dx*dx + dy*dy)
-	p.Mouse.Y = math32.Atan2(dy, dx)
+	p.Mouse.R = math32.Sqrt(dx*dx + dy*dy)
+	p.Mouse.Theta = math32.Atan2(dy, dx)
+
+	p.Weapon.Aim(p.Pos, p.Mouse.R, p.Mouse.Theta)
 }
 
 func (p *Player) Update(gameMap *types.GameMap) {
@@ -122,12 +124,6 @@ func (p *Player) Update(gameMap *types.GameMap) {
 
 	p.Pos.X = newX
 	p.Pos.Y = newY
-
-	p.Weapon.Update()
-}
-
-func (p *Player) Shoot() []omath.IVector2 {
-	return p.Weapon.Shoot(p.Pos, p.Mouse.X, p.Mouse.Y)
 }
 
 func (p *Player) Reset() {
@@ -143,6 +139,8 @@ func (p *Player) ChangeWeapon(weaponID types.WeaponID) {
 	if p.Weapon.ID() == weaponID {
 		return
 	}
+	held := p.Weapon.IsHeld()
+
 	switch weaponID {
 	case weapons.WEAPON_GUN:
 		p.Weapon = weapons.NewGun()
@@ -154,5 +152,9 @@ func (p *Player) ChangeWeapon(weaponID types.WeaponID) {
 		p.Weapon = weapons.NewUzi()
 	case weapons.WEAPON_BOMB:
 		p.Weapon = weapons.NewBomb()
+	}
+
+	if held {
+		p.Weapon.Hold()
 	}
 }

@@ -76,18 +76,18 @@ export default class Network extends EventTarget {
         };
     }
 
-    send<T extends msgs.GenericServerMessage["type"]>(
+    send<T extends msgs.GenericClientMessage["type"]>(
         t: T,
-        ...args: Extract<msgs.GenericServerMessage, { type: T }>["data"] extends undefined
+        ...args: Extract<msgs.GenericClientMessage, { type: T }>["data"] extends undefined
             ? []
-            : [Extract<msgs.GenericServerMessage, { type: T }>["data"]]
+            : [Extract<msgs.GenericClientMessage, { type: T }>["data"]]
     ) {
         const data = (args[0] ?? undefined) as Extract<
-            msgs.GenericServerMessage,
+            msgs.GenericClientMessage,
             { type: T }
         >["data"];
 
-        this.ws.send(msgs.encode({ type: t, data } as Extract<msgs.GenericServerMessage, { type: T }>));
+        this.ws.send(msgs.encode({ type: t, data } as Extract<msgs.GenericClientMessage, { type: T }>));
     }
 
     private async reconnect() {

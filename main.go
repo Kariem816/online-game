@@ -28,7 +28,10 @@ func randomName() string {
 
 func UpdateState() {
 	for _, game := range entities.Games {
-		game.Update()
+		cells := game.Update()
+		if len(cells) > 0 {
+			updateMap(game, cells)
+		}
 	}
 }
 
@@ -253,37 +256,45 @@ func main() {
 				}
 				start := mm.Start
 				game.MovePlayer(id, direction, start)
-			case msgs.MSG_SHOOT:
+			case msgs.MSG_MOUSEPRESS:
 				if game == nil {
 					user.Error("You are not in a game")
 					continue
 				}
 
-				sm := msgs.ShootMessage{}
+				sm := msgs.MousePressMessage{}
 				ok := sm.Parse(gmsg)
 				if !ok {
-					log.Println("[ERROR]: ParseShootMessage", gmsg)
+					log.Println("[ERROR]: ParseMousePressMessage", gmsg)
 				}
 
-				cells, err := game.Shoot(id)
-				if err != nil {
-					user.Error(err.Error())
-				} else {
-					updateMap(game, cells)
-				}
-			case msgs.MSG_MOUSE:
+				game.HoldUserWeapon(id)
+			case msgs.MSG_MOUSERELEASE:
 				if game == nil {
 					user.Error("You are not in a game")
 					continue
 				}
 
-				mm := msgs.MouseMessage{}
-				ok := mm.Parse(gmsg)
+				sm := msgs.MouseReleaseMessage{}
+				ok := sm.Parse(gmsg)
 				if !ok {
-					log.Println("[ERROR]: ParseMouseMessage", gmsg)
+					log.Println("[ERROR]: ParseMouseReleaseMessage", gmsg)
 				}
 
-				game.MoveMouse(id, mm.DX, mm.DY)
+				game.ReleaseUserWeapon(id)
+			case msgs.MSG_MOUSEMOVE:
+				if game == nil {
+					user.Error("You are not in a game")
+					continue
+				}
+
+				mm := msgs.MouseMoveMessage{}
+				ok := mm.Parse(gmsg)
+				if !ok {
+					log.Println("[ERROR]: ParseMouseMoveMessage", gmsg)
+				}
+
+				game.AimUserTo(id, mm.DX, mm.DY)
 			case msgs.MSG_CHAT:
 				// TODO: Add support for commands
 				if game == nil {

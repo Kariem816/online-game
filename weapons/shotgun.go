@@ -12,74 +12,80 @@ import (
 
 type Shotgun struct {
 	BaseWeapon
-	cooldownLeft time.Duration
-	spread       float32
+	spread    float32
+	hitCenter omath.Vector2
+	theta     float32
 }
+
+const ShotgunCooldown = 1000 * time.Millisecond
 
 var baseShotgun = BaseWeapon{
 	id:       WEAPON_SHOTGUN,
-	cooldown: 1000 * time.Millisecond,
+	cooldown: ShotgunCooldown,
 	radius:   2,
 }
 
 func NewShotgun() *Shotgun {
 	return &Shotgun{
-		BaseWeapon:   baseShotgun,
-		cooldownLeft: baseShotgun.cooldown,
-		spread:       1,
+		BaseWeapon: baseShotgun,
+		spread:     1,
 	}
-}
-
-func (s *Shotgun) ID() types.WeaponID {
-	return s.id
 }
 
 func (s *Shotgun) Name() string {
 	return "Shotgun"
 }
 
-func (s *Shotgun) Update() {
-	if s.cooldownLeft > 0 {
-		s.cooldownLeft -= consts.GameTick
+func (s *Shotgun) Update() []omath.IVector2 {
+	if s.cooldown > 0 {
+		s.cooldown -= consts.GameTick
 	}
-	if s.cooldownLeft < 0 {
-		s.cooldownLeft = 0
+	if s.cooldown < 0 {
+		s.cooldown = 0
 	}
+
+	if s.held && s.cooldown == 0 {
+		return s.shoot()
+	}
+	return []omath.IVector2{}
 }
 
 func (s *Shotgun) Cooldown() time.Duration {
-	return s.cooldown
-}
-func (s *Shotgun) CooldownLeft() time.Duration {
-	return s.cooldownLeft
+	return ShotgunCooldown
 }
 
-func (s *Shotgun) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
-	px := pos.X + 0.5
-	py := pos.Y + 0.5
+// we have oop at home
+func (s *Shotgun) Aim(pos omath.Vector2, r float32, theta float32) {
+	s.theta = theta
+	s.hitCenter = omath.Vector2{
+		X: pos.X + 0.5 + s.radius*math32.Cos(theta),
+		Y: pos.Y + 0.5 + s.radius*math32.Sin(theta),
+	}
+}
 
-	x := px + baseShotgun.radius*math32.Cos(theta)
-	y := py + baseShotgun.radius*math32.Sin(theta)
+func (s *Shotgun) shoot() []omath.IVector2 {
+	cx := float32(s.hitCenter.X)
+	cy := float32(s.hitCenter.Y)
 
-	dxc := math32.Cos(theta) * s.spread
-	dyc := math32.Sin(theta) * s.spread
+	dxc := math32.Cos(s.theta) * s.spread
+	dyc := math32.Sin(s.theta) * s.spread
 
-	dxr := math32.Cos(theta+math32.Pi/2) * s.spread
-	dyr := math32.Sin(theta+math32.Pi/2) * s.spread
+	dxr := math32.Cos(s.theta+math32.Pi/2) * s.spread
+	dyr := math32.Sin(s.theta+math32.Pi/2) * s.spread
 
-	dxl := math32.Cos(theta-math32.Pi/2) * s.spread
-	dyl := math32.Sin(theta-math32.Pi/2) * s.spread
+	dxl := math32.Cos(s.theta-math32.Pi/2) * s.spread
+	dyl := math32.Sin(s.theta-math32.Pi/2) * s.spread
 
 	defer s.setCooldown()
 	return []omath.IVector2{
-		{X: int32(x + dxc), Y: int32(y + dyc)},
-		{X: int32(x + dxr), Y: int32(y + dyr)},
-		{X: int32(x + dxl), Y: int32(y + dyl)},
+		{X: int32(cx + dxc), Y: int32(cy + dyc)},
+		{X: int32(cx + dxr), Y: int32(cy + dyr)},
+		{X: int32(cx + dxl), Y: int32(cy + dyl)},
 	}
 }
 
 func (s *Shotgun) setCooldown() {
-	s.cooldownLeft = s.cooldown
+	s.cooldown = ShotgunCooldown
 }
 
 func (s *Shotgun) ToSettingsMessage() types.SettingsMessageWeapon {

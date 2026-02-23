@@ -57,7 +57,12 @@ type MoveMessage struct {
 }
 type MovedMessage struct{}
 
-type ShootMessage struct{}
+type MousePressMessage struct{}
+type MouseReleaseMessage struct{}
+type MouseMoveMessage struct {
+	DX int32
+	DY int32
+}
 type ShotMessage struct {
 	Cells []types.CellResult
 }
@@ -82,11 +87,6 @@ type StateMessage struct {
 	Players   []types.StateMessagePlayer
 }
 
-type MouseMessage struct {
-	DX int32
-	DY int32
-}
-
 type SystemMessage struct {
 	Type    uint8
 	Message string
@@ -96,30 +96,31 @@ type ErrorMessage struct {
 }
 
 const (
-	MSG_WLCM    uint8 = iota
-	MSG_HOST    uint8 = iota
-	MSG_HOSTED  uint8 = iota
-	MSG_JOIN    uint8 = iota
-	MSG_JOINED  uint8 = iota
-	MSG_LEAVE   uint8 = iota
-	MSG_LEFT    uint8 = iota
-	MSG_START   uint8 = iota
-	MSG_STARTED uint8 = iota
-	MSG_TEAM    uint8 = iota
-	MSG_TEAMED  uint8 = iota
-	MSG_WEAPON  uint8 = iota
-	MSG_MOVE    uint8 = iota
-	MSG_MOVED   uint8 = iota
-	MSG_SHOOT   uint8 = iota
-	MSG_SHOT    uint8 = iota
-	MSG_CHAT    uint8 = iota
-	MSG_CHATTED uint8 = iota
-	MSG_MAP     uint8 = iota
-	MSG_STATE   uint8 = iota
-	MSG_MOUSE   uint8 = iota
-	MSG_SYSTEM  uint8 = iota
-	MSG_ERROR   uint8 = iota
-	MSG_LEN     uint8 = iota
+	MSG_WLCM         uint8 = iota
+	MSG_HOST         uint8 = iota
+	MSG_HOSTED       uint8 = iota
+	MSG_JOIN         uint8 = iota
+	MSG_JOINED       uint8 = iota
+	MSG_LEAVE        uint8 = iota
+	MSG_LEFT         uint8 = iota
+	MSG_START        uint8 = iota
+	MSG_STARTED      uint8 = iota
+	MSG_TEAM         uint8 = iota
+	MSG_TEAMED       uint8 = iota
+	MSG_WEAPON       uint8 = iota
+	MSG_MOVE         uint8 = iota
+	MSG_MOVED        uint8 = iota
+	MSG_MOUSEPRESS   uint8 = iota
+	MSG_MOUSERELEASE uint8 = iota
+	MSG_MOUSEMOVE    uint8 = iota
+	MSG_SHOT         uint8 = iota
+	MSG_CHAT         uint8 = iota
+	MSG_CHATTED      uint8 = iota
+	MSG_MAP          uint8 = iota
+	MSG_STATE        uint8 = iota
+	MSG_SYSTEM       uint8 = iota
+	MSG_ERROR        uint8 = iota
+	MSG_LEN          uint8 = iota
 )
 
 const (
@@ -302,18 +303,42 @@ func (mm *MoveMessage) Parse(gm GenericMessage) bool {
 	return true
 }
 
-// func (mm MovedMessage) Buffer() (*bytes.Buffer, bool) {
-
-// }
-
-func (sm *ShootMessage) Parse(gm GenericMessage) bool {
-	if gm.Type != MSG_SHOOT {
+func (mp *MousePressMessage) Parse(gm GenericMessage) bool {
+	if gm.Type != MSG_MOUSEPRESS {
 		return false
 	}
 
-	if len(gm.Args) > 0 {
+	if len(gm.Args) != 0 {
 		return false
 	}
+
+	return true
+}
+
+func (mr *MouseReleaseMessage) Parse(gm GenericMessage) bool {
+	if gm.Type != MSG_MOUSERELEASE {
+		return false
+	}
+
+	if len(gm.Args) != 0 {
+		return false
+	}
+
+	return true
+}
+
+func (mm *MouseMoveMessage) Parse(gm GenericMessage) bool {
+	if gm.Type != MSG_MOUSEMOVE {
+		return false
+	}
+
+	if len(gm.Args) != 8 {
+		return false
+	}
+
+	reader := bytes.NewReader(gm.Args)
+	binary.Read(reader, binary.LittleEndian, &mm.DX)
+	binary.Read(reader, binary.LittleEndian, &mm.DY)
 
 	return true
 }
@@ -402,22 +427,6 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	}
 
 	return buf, true
-}
-
-func (mm *MouseMessage) Parse(gm GenericMessage) bool {
-	if gm.Type != MSG_MOUSE {
-		return false
-	}
-
-	if len(gm.Args) != 8 {
-		return false
-	}
-
-	reader := bytes.NewReader(gm.Args)
-	binary.Read(reader, binary.LittleEndian, &mm.DX)
-	binary.Read(reader, binary.LittleEndian, &mm.DY)
-
-	return true
 }
 
 func (sm SystemMessage) Buffer() (*bytes.Buffer, bool) {

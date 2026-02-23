@@ -6,75 +6,67 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
-
-	"github.com/chewxy/math32"
 )
 
 type RocketLauncher struct {
 	BaseWeapon
-	cooldownLeft time.Duration
 }
+
+const RocketLauncherCooldown = 3000 * time.Millisecond
 
 var baseRocketLauncher = BaseWeapon{
 	id:       WEAPON_ROCKETLAUNCHER,
-	cooldown: 3000 * time.Millisecond,
+	cooldown: RocketLauncherCooldown,
 	radius:   4,
 }
 
 func NewRocketLauncher() *RocketLauncher {
 	return &RocketLauncher{
-		BaseWeapon:   baseRocketLauncher,
-		cooldownLeft: baseRocketLauncher.cooldown,
+		BaseWeapon: baseRocketLauncher,
 	}
-}
-
-func (l *RocketLauncher) ID() types.WeaponID {
-	return l.id
 }
 
 func (l *RocketLauncher) Name() string {
 	return "Rocket Launcher"
 }
 
-func (l *RocketLauncher) Update() {
-	if l.cooldownLeft > 0 {
-		l.cooldownLeft -= consts.GameTick
+func (l *RocketLauncher) Update() []omath.IVector2 {
+	if l.cooldown > 0 {
+		l.cooldown -= consts.GameTick
 	}
-	if l.cooldownLeft < 0 {
-		l.cooldownLeft = 0
+	if l.cooldown < 0 {
+		l.cooldown = 0
 	}
+
+	if l.held && l.cooldown == 0 {
+		return l.shoot()
+	}
+	return []omath.IVector2{}
 }
 
 func (l *RocketLauncher) Cooldown() time.Duration {
-	return l.cooldown
+	return RocketLauncherCooldown
 }
 
-func (l *RocketLauncher) CooldownLeft() time.Duration {
-	return l.cooldownLeft
-}
-
-func (l *RocketLauncher) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
-	px := pos.X + 0.5
-	py := pos.Y + 0.5
-
-	cx := px + baseRocketLauncher.radius*math32.Cos(theta)
-	cy := py + baseRocketLauncher.radius*math32.Sin(theta)
+func (l *RocketLauncher) shoot() []omath.IVector2 {
+	cx := l.hitCenter.X
+	cy := l.hitCenter.Y
 	defer l.setCooldown()
 	return []omath.IVector2{
-		{X: int32(cx - 1), Y: int32(cy - 1)},
-		{X: int32(cx - 1), Y: int32(cy)},
-		{X: int32(cx - 1), Y: int32(cy + 1)},
-		{X: int32(cx), Y: int32(cy - 1)},
-		{X: int32(cx), Y: int32(cy)},
-		{X: int32(cx), Y: int32(cy + 1)},
-		{X: int32(cx + 1), Y: int32(cy - 1)},
-		{X: int32(cx + 1), Y: int32(cy)},
-		{X: int32(cx + 1), Y: int32(cy + 1)},
+		{X: cx - 1, Y: cy - 1},
+		{X: cx - 1, Y: cy},
+		{X: cx - 1, Y: cy + 1},
+		{X: cx, Y: cy - 1},
+		{X: cx, Y: cy},
+		{X: cx, Y: cy + 1},
+		{X: cx + 1, Y: cy - 1},
+		{X: cx + 1, Y: cy},
+		{X: cx + 1, Y: cy + 1},
 	}
 }
 
 func (l *RocketLauncher) setCooldown() {
-	l.cooldownLeft = l.cooldown
+	l.cooldown = RocketLauncherCooldown
 }
 
 func (l *RocketLauncher) ToSettingsMessage() types.SettingsMessageWeapon {

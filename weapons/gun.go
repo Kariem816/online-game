@@ -6,64 +6,55 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
-
-	"github.com/chewxy/math32"
 )
 
 type Gun struct {
 	BaseWeapon
-	cooldownLeft time.Duration
 }
+
+const GunCooldown = 500 * time.Millisecond
 
 var baseGun = BaseWeapon{
 	id:       WEAPON_GUN,
-	cooldown: 500 * time.Millisecond,
+	cooldown: GunCooldown,
 	radius:   1,
 }
 
 func NewGun() *Gun {
 	return &Gun{
-		BaseWeapon:   baseGun,
-		cooldownLeft: baseGun.cooldown,
+		BaseWeapon: baseGun,
 	}
-}
-
-func (g *Gun) ID() types.WeaponID {
-	return g.id
 }
 
 func (g *Gun) Name() string {
 	return "Gun"
 }
 
-func (g *Gun) Update() {
-	if g.cooldownLeft > 0 {
-		g.cooldownLeft -= consts.GameTick
+func (g *Gun) Update() []omath.IVector2 {
+	if g.cooldown > 0 {
+		g.cooldown -= consts.GameTick
 	}
-	if g.cooldownLeft < 0 {
-		g.cooldownLeft = 0
+	if g.cooldown < 0 {
+		g.cooldown = 0
 	}
+
+	if g.held && g.cooldown == 0 {
+		return g.shoot()
+	}
+	return []omath.IVector2{}
 }
 
 func (g *Gun) Cooldown() time.Duration {
-	return g.cooldown
-}
-func (g *Gun) CooldownLeft() time.Duration {
-	return g.cooldownLeft
+	return GunCooldown
 }
 
-func (g *Gun) Shoot(pos omath.Vector2, r float32, theta float32) []omath.IVector2 {
-	px := pos.X + 0.5
-	py := pos.Y + 0.5
-
-	x := px + baseGun.radius*math32.Cos(theta)
-	y := py + baseGun.radius*math32.Sin(theta)
+func (g *Gun) shoot() []omath.IVector2 {
 	defer g.setCooldown()
-	return []omath.IVector2{{X: int32(x), Y: int32(y)}}
+	return []omath.IVector2{{X: g.hitCenter.X, Y: g.hitCenter.Y}}
 }
 
 func (g *Gun) setCooldown() {
-	g.cooldownLeft = g.cooldown
+	g.cooldown = GunCooldown
 }
 
 func (g *Gun) ToSettingsMessage() types.SettingsMessageWeapon {
