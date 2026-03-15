@@ -9,7 +9,7 @@ type TWeapons = {
         */
         draw: (ctx: CanvasRenderingContext2D, color: string, cw: number, ch: number, pc: { x: number, y: number }, theta: number) => void
         drawIcon: (ctx: CanvasRenderingContext2D, color1: string, color2: string, x: number, y: number, w: number, h: number) => void
-    }
+    };
 }
 
 function drawUnknown(ctx: CanvasRenderingContext2D, color: string, cw: number, ch: number, pc: { x: number, y: number }, theta: number) {

@@ -1,11 +1,13 @@
 import Network from "./network";
 import { Messages, SystemMessageType } from "./msgs";
 import { appendSystemMessage } from "./chat";
+import { config } from "./config";
 
 const root = document.getElementById("app")!;
 export enum Screen {
-    "Home",
-    "Game",
+    Home,
+    Game,
+    Test,
 }
 
 function hostRoom(network: Network) {
@@ -43,6 +45,8 @@ export default class React {
             this.HomeScreen();
         } else if (this.active === Screen.Game) {
             this.GameScreen();
+        } else if (this.active === Screen.Test) {
+            this.TestScreen();
         }
     }
 
@@ -59,6 +63,20 @@ export default class React {
 
         const container = document.createElement("div");
         center.appendChild(container);
+
+        if (config.testScene) {
+            const testContainer = document.createElement("div");
+            center.appendChild(testContainer);
+
+            const testBtn = document.createElement("button");
+            testBtn.classList.add("btn", "secondary");
+            testBtn.textContent = "Test Scene";
+            testContainer.appendChild(testBtn);
+            
+            testBtn.addEventListener("click", () => {
+                this.TestScreen();
+            });
+        }
 
         const h1 = document.createElement("h1");
         h1.textContent = "Online Game";
@@ -191,5 +209,29 @@ export default class React {
 
         // TODO: there should be a better way to do this
         return canvas;
+    }
+
+    TestScreen() {
+        this.active = Screen.Test;
+
+        const container = document.createElement("div");
+        container.classList.add("game-container", "full-height");
+
+        const canvasContainer = document.createElement("div");
+        canvasContainer.classList.add("canvas-container", "center");
+        container.appendChild(canvasContainer);
+
+        const canvas = document.createElement("canvas");
+        canvas.id = "canvas";
+        canvas.width = 1600;
+        canvas.height = 900;
+        canvas.tabIndex = 1;
+        canvasContainer.appendChild(canvas);
+
+        import("./game/test.ts").then((module) => {
+            module.run(canvas);
+        });
+        
+        root.replaceChildren(container);
     }
 }

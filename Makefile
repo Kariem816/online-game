@@ -20,7 +20,7 @@ public:
 	mkdir -p public
 
 client: public
-	cd client && bun run build
+	cd client && VITE_PUBLIC_ENABLE_TEST_SCENE=false bun run build
 
 clean:
 	rm -rf build

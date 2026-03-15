@@ -27,6 +27,7 @@ export enum TWeapon {
 	WEAPON_UZI,
 	WEAPON_BOMB,
 };
+export const WeaponsCount = 5; // remember to update this every time you change weapons
 
 export const theme = {
 	colors: {
