@@ -78,16 +78,16 @@ export default class Game {
         this.input.setStartPosition(e.offsetX, e.offsetY);
     }
 
-    gameStarted() {
-        return this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing;
-    }
-
     onLockChangeAlert() {
         if (document.pointerLockElement === this.renderer) {
             this.input.addListeners();
         } else {
             this.input.removeListeners();
         }
+    }
+
+    gameStarted() {
+        return this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing;
     }
 
     onStateUpdate(state: StateMessage) {
@@ -384,7 +384,7 @@ export default class Game {
         end -= scoreWidth + padding;
         for (const player of teamA) {
             const isMe = player.user.id === this.myData.id;
-            Weapons[player.weapon].drawIcon(this.ctx, theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"], end - padding - scoreWidth, padding / 2, playerSize, playerSize);
+            Weapons[player.weapon].drawIcon(this.ctx, { x: end - padding - scoreWidth, y: padding / 2, w: playerSize, h: playerSize }, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
             end -= playerSize + padding;
         }
 
@@ -395,7 +395,7 @@ export default class Game {
         start += scoreWidth + padding;
         for (const player of teamB) {
             const isMe = player.user.id === this.myData.id;
-            Weapons[player.weapon].drawIcon(this.ctx, theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"], start, padding / 2, playerSize, playerSize);
+            Weapons[player.weapon].drawIcon(this.ctx, { x: start, y: padding / 2, w: playerSize, h: playerSize }, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
             start += playerSize + padding;
         }
 
@@ -505,11 +505,9 @@ export default class Game {
                 // render player weapon
                 Weapons[player.weapon].draw(
                     this.ctx,
-                    color,
-                    cellWidth,
-                    cellHeight,
-                    { x: x + 0.5, y: y + 0.5 },
-                    player.theta,
+                    { w: cellWidth, h: cellHeight },
+                    { pos: { x: (x + 0.5) * cellWidth, y: (y + 0.5) * cellHeight }, theta: player.theta },
+                    theme.colors.foreground
                 );
             }
 
