@@ -1,13 +1,14 @@
-import Input, { Mouse } from "../input.js";
-import GameMap from "../map.js";
-import { Weapons } from "../weapons.js";
-import { copyText } from "../utils.js";
-import { appendSystemMessage } from "../chat.js";
+import Input, { Mouse } from "../input";
+import GameMap from "../map";
+import { Weapons } from "../weapons";
+import { Camera } from "./camera";
+import { copyText } from "../utils";
+import { appendSystemMessage } from "../chat";
 import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings } from "../msgs";
-import { theme } from "../consts.js";
-import { Team, TWeapon } from "../consts.js";
-import type { Point } from "../geometry.js";
-import type Network from "../network/index";
+import { theme } from "../consts";
+import { Team, TWeapon } from "../consts";
+import type { Point } from "../geometry";
+import type Network from "../network";
 
 // Game States
 enum GamePhases {
@@ -41,7 +42,6 @@ export default class Game {
 
     ctx: CanvasRenderingContext2D;
 
-    debugFrame: boolean;
     fpsCounter = false;
     fps: number = 0;
 
@@ -49,20 +49,24 @@ export default class Game {
 
     game: StateMessage;
     map: GameMap;
+    camera: Camera;
 
     settings: GameSettings;
 
     myData: Omit<WelcomeMessage, "settings">;
 
+    private gameStarted = false;
+    private gameJustStarted = false;
+    private gameJustEnded = false;
+
     constructor(private network: Network, private renderer: HTMLCanvasElement, extras: GameExtras) {
         this.ctx = renderer.getContext("2d")!; // shouldn't fail ?!
-
-        this.debugFrame = false;
 
         this.input = new Input(renderer);
 
         this.game = { host: 0, players: [], room: "", state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0 } };
         this.map = new GameMap();
+        this.camera = new Camera({ x: 0, y: 0, w: 0, h: 0 }, 0, 0, 1);
 
         const { settings, ...myData } = extras;
         this.settings = settings;
@@ -86,17 +90,30 @@ export default class Game {
         }
     }
 
-    gameStarted() {
+    hasGameStarted() {
         return this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing;
     }
 
     onStateUpdate(state: StateMessage) {
         this.game = state;
         this.isServerUpdated = true;
+        const gameStarted = this.hasGameStarted();
+        if (gameStarted && !this.gameStarted) {
+            this.gameJustStarted = true;
+            this.gameStarted = true;
+        } else if (!gameStarted && this.gameStarted) {
+            this.gameJustEnded = true;
+            this.gameStarted = false;
+        } else if (this.gameJustStarted) {
+            this.gameJustStarted = false;
+        } else if (this.gameJustEnded) {
+            this.gameJustEnded = false;
+        }
     }
 
     onMapUpdate(map: MapMessage) {
         this.map = GameMap.fromMapMessage(map);
+        this.camera.setFullView({ x: 0, y: 0, w: this.map.width, h: this.map.height });
     }
 
     onShot(cells: CellResult[]) {
@@ -104,29 +121,39 @@ export default class Game {
     }
 
     canvasToGameCoords({ x, y }: Point) {
-        const { width, height } = this.renderer;
-        const wOffset = width * 0.05;
-        const wRest = width - wOffset;
-        const hOffset = height * 0.1;
-        const hRest = height - hOffset;
+        const { width: canvasWidth, height: canvasHeight } = this.renderer;
+        const wOffset = canvasWidth * 0.05;
+        const wRest = canvasWidth - wOffset;
+        const hOffset = canvasHeight * 0.1;
+        const hRest = canvasHeight - hOffset;
 
-        const gx = (Math.max(wOffset, x) - wOffset) * this.map.width / (wRest - wOffset);
-        const gy = (Math.max(hOffset, y) - hOffset) * this.map.height / hRest;
+        const { x: mapX, y: mapY, w: mapWidth, h: mapHeight } = this.camera.rect;
+
+        const gx = mapX + (Math.max(wOffset, x) - wOffset) * mapWidth / (wRest - wOffset);
+        const gy = mapY + (Math.max(hOffset, y) - hOffset) * mapHeight / hRest;
 
         return { x: gx, y: gy };
     }
 
-    gameCoordsToCanvas({ x, y }: Point) {
-        const { width, height } = this.renderer;
-        const wOffset = width * 0.05;
-        const wRest = width - wOffset;
-        const hOffset = height * 0.1;
-        const hRest = height - hOffset;
+    createGameCoordsToCanvasFn() {
+        const { width: canvasWidth, height: canvasHeight } = this.renderer;
+        const wOffset = canvasWidth * 0.05;
+        const wRest = canvasWidth - wOffset;
+        const hOffset = canvasHeight * 0.1;
+        const hRest = canvasHeight - hOffset;
 
-        const gx = (x * wRest / this.map.width) + wOffset;
-        const gy = (y * hRest / this.map.height) + hOffset;
+        const { x: mapX, y: mapY, w: mapWidth, h: mapHeight } = this.camera.rect;
 
-        return { x: gx, y: gy };
+        const widthR = wRest / mapWidth;
+        const heightR = hRest / mapHeight;
+
+        return ({ x, y }: Point) => {
+
+            const gx = (x * widthR) + wOffset - mapX;
+            const gy = (y * heightR) + hOffset - mapY;
+
+            return { x: gx, y: gy };
+        };
     }
 
     getMyPlayer() {
@@ -134,11 +161,7 @@ export default class Game {
     }
 
     update(dt: number) {
-        // Logging
-        if (this.debugFrame) {
-            console.log({ state: this.game, serverUpdated: this.isServerUpdated });
-            this.debugFrame = false;
-        }
+        const me = this.getMyPlayer();
 
         this.fps = calcFPS(dt);
 
@@ -193,6 +216,13 @@ export default class Game {
         } else {
             this.isServerUpdated = false;
         }
+
+        // Camera
+        this.camera.focusOn(me.x, me.y);
+        if (this.gameJustStarted) {
+            this.camera.focusOnIm(me.x, me.y);
+        }
+        this.camera.update(dt);
 
         // Input
         this.input.update();
@@ -292,6 +322,16 @@ export default class Game {
             // Aiming
             const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());
             network.send(Messages.MSG_MOUSEMOVE, gameCoords);
+
+            // map zoom
+            const wheel = this.input.getWheelDelta();
+            if (wheel !== 0) {
+                if (wheel > 0) {
+                    this.camera.zoomOut();
+                } else {
+                    this.camera.zoomIn();
+                }
+            }
         }
 
         if (this.game.state.phase === GamePhases.WaitingForPlayers || this.game.state.phase === GamePhases.GameOver) {
@@ -306,7 +346,7 @@ export default class Game {
 
         // Debug
         if (this.input.isKeyReleased("KeyR")) {
-            this.debugFrame = true;
+            console.log({ state: this.game, serverUpdated: this.isServerUpdated });
         }
         if (this.input.isKeyReleased("KeyF")) {
             this.fpsCounter = !this.fpsCounter;
@@ -314,11 +354,11 @@ export default class Game {
     }
 
     render() {
-        const { width, height } = this.renderer;
-        const wOffset = width * 0.05;
-        const wRest = width - wOffset;
-        const hOffset = height * 0.1;
-        const hRest = height - hOffset;
+        const { width: rendererWidth, height: rendererHeight } = this.renderer;
+        const wOffset = rendererWidth * 0.05;
+        const wRest = rendererWidth - wOffset;
+        const hOffset = rendererHeight * 0.1;
+        const hRest = rendererHeight - hOffset;
         const teamAColor = theme.colors.teamA;
         const teamBColor = theme.colors.teamB;
         const me = this.getMyPlayer();
@@ -327,7 +367,7 @@ export default class Game {
 
         // Bars
         this.ctx.fillStyle = theme.colors.background;
-        this.ctx.fillRect(0, 0, width, height);
+        this.ctx.fillRect(0, 0, rendererWidth, rendererHeight);
 
         // Top Left Corner
         if (this.input.isMouseOver({ x: 0, y: 0, w: wOffset * 2, h: hOffset })) {
@@ -410,33 +450,46 @@ export default class Game {
         this.ctx.fillRect(wOffset, hOffset, wRest - wOffset, hRest);
 
         // Render map
-        if (this.gameStarted()) {
-            const { width: mapWidth, height: mapHeight } = this.map;
+        if (this.gameStarted) {
+            this.ctx.save();
+
+            const renderRect = this.camera.rect;
+            const mapWidth = renderRect.w;
+            const mapHeight = renderRect.h;
             const cellWidth = Math.floor((wRest - wOffset) / mapWidth);
-            const mapWidthOffset = wOffset / cellWidth;
+            const mapWidthOffset = wOffset / cellWidth - renderRect.x;
             const cellHeight = Math.floor(hRest / mapHeight);
-            const mapHeightOffset = hOffset / cellHeight;
+            const mapHeightOffset = hOffset / cellHeight - renderRect.y;
 
-            for (let i = 0; i < mapWidth * mapHeight; i++) {
-                const x = (i % mapWidth) + mapWidthOffset;
-                const y = Math.floor(i / mapWidth) + mapHeightOffset;
+            // calculate the range of tiles to render based on the camera rect
+            this.ctx.beginPath();
+            this.ctx.rect(wOffset, hOffset, wRest - wOffset, hRest);
+            this.ctx.clip();
 
-                switch (this.map.getTileByIndex(i)) {
-                    case Tiles.EmptyTile: {
-                        // Empty
-                    } break;
-                    case Tiles.TeamATile: {
-                        this.ctx.fillStyle = theme.colors.tileA;
+            for (let ry = Math.floor(renderRect.y); ry < mapHeight + renderRect.y; ry++) {
+                for (let rx = Math.floor(renderRect.x); rx < mapWidth + renderRect.x; rx++) {
+                    const x = rx + mapWidthOffset;
+                    const y = ry + mapHeightOffset;
+
+                    const tile = this.map.getTile(rx, ry);
+                    switch (tile) {
+                        case Tiles.EmptyTile: {
+                            // Empty
+                        } break;
+                        case Tiles.TeamATile: {
+                            this.ctx.fillStyle = theme.colors.tileA;
+                        } break;
+                        case Tiles.TeamBTile: {
+                            this.ctx.fillStyle = theme.colors.tileB;
+                        } break;
+                        case Tiles.WallTile: {
+                            this.ctx.fillStyle = theme.colors.tileWall;
+                        } break;
+                    }
+
+                    if (tile !== Tiles.EmptyTile) {
                         this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    } break;
-                    case Tiles.TeamBTile: {
-                        this.ctx.fillStyle = theme.colors.tileB;
-                        this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    } break;
-                    case Tiles.WallTile: {
-                        this.ctx.fillStyle = theme.colors.tileWall;
-                        this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
-                    } break;
+                    }
                 }
             }
 
@@ -452,8 +505,17 @@ export default class Game {
 
                 // ring
                 this.ctx.fillStyle = color;
-                this.ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                const startX = Math.max(wOffset, x * cellWidth);
+                const startY = Math.max(hOffset, y * cellHeight);
+                const endX = Math.min(rendererWidth - wOffset, (x + 1) * cellWidth);
+                const endY = Math.min(rendererHeight, (y + 1) * cellHeight);
+                this.ctx.fillRect(startX, startY, endX - startX, endY - startY);
                 if (withRing) {
+                    this.ctx.save();
+                    this.ctx.beginPath();
+                    this.ctx.rect(startX, startY, endX - startX, endY - startY);
+                    this.ctx.clip();
+
                     this.ctx.strokeStyle = ringColor;
                     this.ctx.lineWidth = 0.2 * cellWidth; // TODO: this will cause issues if cellWidth !== cellHeight
                     this.ctx.beginPath();
@@ -463,6 +525,8 @@ export default class Game {
                     this.ctx.lineTo((x + 0.1) * cellWidth, (y + 0.9) * cellHeight);
                     this.ctx.closePath();
                     this.ctx.stroke();
+
+                    this.ctx.restore();
                 }
 
                 // cooldown
@@ -519,17 +583,19 @@ export default class Game {
                 const secs = Math.floor((timeLeft! - this.settings.gameLength) / 1000);
                 this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
             }
+
+            this.ctx.restore();
         } else {
             this.ctx.fillStyle = theme.colors.foreground;
             this.ctx.font = "60px Arial";
             switch (this.game.state.phase) {
                 case GamePhases.WaitingForPlayers: {
-                    this.ctx.fillText("Waiting for players", width / 2, hOffset + hRest / 2);
+                    this.ctx.fillText("Waiting for players", rendererWidth / 2, hOffset + hRest / 2);
                 } break;
                 case GamePhases.GameOver: {
                     const winner = this.game.state.scoreA > this.game.state.scoreB ? "Team A Wins"
                         : this.game.state.scoreA < this.game.state.scoreB ? "Team B Wins" : "It's a Tie";
-                    this.ctx.fillText(winner, width / 2, hOffset + hRest / 2);
+                    this.ctx.fillText(winner, rendererWidth / 2, hOffset + hRest / 2);
                 } break;
             }
         }

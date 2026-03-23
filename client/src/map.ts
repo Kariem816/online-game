@@ -25,6 +25,10 @@ export default class GameMap {
         }
     }
 
+    getTile(x: number, y: number) {
+        return this.tiles[y * this.width + x];
+    }
+    
     getTileByIndex(i: number) {
         return this.tiles[i];
     }
