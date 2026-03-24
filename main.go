@@ -3,9 +3,9 @@ package main
 import (
 	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"math/rand"
-	"net/http"
 	"online-game/consts"
 	"online-game/entities"
 	"online-game/msgs"
@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/contrib/websocket"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/contrib/v3/websocket"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/static"
 )
 
 func randomName() string {
@@ -66,15 +66,15 @@ func updateMap(game *entities.Game, cells []types.CellResult) {
 	}
 }
 
-//go:embed public/*
+//go:embed public
 var publicDir embed.FS
 
 func main() {
 	app := fiber.New()
 
-	app.Use(filesystem.New(filesystem.Config{
-		Root:       http.FS(&publicDir),
-		PathPrefix: "/public",
+	sub, _ := fs.Sub(publicDir, "public")
+	app.Use("/*", static.New("", static.Config{
+		FS: sub,
 	}))
 
 	go func() {
@@ -95,7 +95,7 @@ func main() {
 		Weapons:       weapons.List(),
 	}
 
-	app.Use("/ws", func(c *fiber.Ctx) error {
+	app.Use("/ws", func(c fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
 			return c.Next()
 		}

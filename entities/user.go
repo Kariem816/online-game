@@ -6,7 +6,7 @@ import (
 	"online-game/weapons"
 	"sync"
 
-	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/contrib/v3/websocket"
 )
 
 type User struct {

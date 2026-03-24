@@ -6,7 +6,7 @@ import (
 	"online-game/types"
 	"online-game/weapons"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 type ServerMessage interface {
