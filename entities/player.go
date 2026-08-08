@@ -26,27 +26,39 @@ type Player struct {
 }
 type Players []*Player
 
-// TODO: name
-func (p Players) Foo() []types.StateMessagePlayer {
+func (p Players) StateMessage() []types.StateMessagePlayer {
 	smps := make([]types.StateMessagePlayer, len(p))
 	for i, player := range p {
-		smps[i] = player.ToStateMessagePlayer()
+		smps[i] = player.ToStateMessage()
 	}
 	return smps
 }
 
-func (p *Player) ToStateMessagePlayer() types.StateMessagePlayer {
+func (p Players) RoomMessage() []types.RoomMessagePlayer {
+	rmps := make([]types.RoomMessagePlayer, len(p))
+	for i, player := range p {
+		rmps[i] = player.ToRoomMessage()
+	}
+	return rmps
+}
+
+func (p *Player) ToStateMessage() types.StateMessagePlayer {
 	return types.StateMessagePlayer{
+		ID:       p.User.ID,
 		Team:     p.Team,
 		Weapon:   p.Weapon.ID(),
 		Pos:      p.Pos,
 		Vel:      p.Vel,
 		Theta:    p.Mouse.Theta,
 		Cooldown: p.Cooldown(),
-		User: types.StateMessageUser{
-			ID:       p.User.ID,
-			Username: p.User.Username,
-		},
+	}
+}
+
+func (p *Player) ToRoomMessage() types.RoomMessagePlayer {
+	return types.RoomMessagePlayer{
+		ID:       p.User.ID,
+		Team:     p.Team,
+		Username: p.User.Username,
 	}
 }
 

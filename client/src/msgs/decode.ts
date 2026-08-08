@@ -23,6 +23,8 @@ import type {
 	TypedStateMessage,
 	TypedSystemMessage,
 	SettingsMessageWeapon,
+	TypedRoomMessage,
+	RoomMessage,
 } from "./types";
 
 class StatedDataView {
@@ -148,9 +150,6 @@ function decodeMsgData(
 			return { width, height, tiles } as MapMessage;
 		}
 		case Messages.MSG_STATE: {
-			const host = view.getInt16();
-			const room = view.getString(4);
-
 			const unixSec = view.getInt32();
 			const unixMilli = view.getInt16();
 			const unix = unixSec * 1000 + unixMilli;
@@ -171,10 +170,7 @@ function decodeMsgData(
 			);
 			for (let i = 0; i < playersLen; i++) {
 				players[i] = {
-					user: {
-						id: view.getInt16(),
-						username: "",
-					},
+					id: view.getInt16(),
 					team: view.getUint8(),
 					weapon: view.getUint8(),
 					x: view.getFloat32(),
@@ -184,16 +180,32 @@ function decodeMsgData(
 					theta: view.getFloat32(),
 					cooldown: view.getUint8(),
 				};
-				players[i].user.username = view.getString(view.getUint8());
 			}
 
 			return {
-				host,
-				room,
 				startedAt,
 				state,
 				players,
 			} as StateMessage;
+		}
+		case Messages.MSG_ROOM: {
+			const host = view.getInt16();
+			const roomLen = view.getUint8();
+			const room = view.getString(roomLen);
+			const playersLen = view.getUint8();
+			const players = new Array<RoomMessage["players"][number]>(playersLen);
+			for (let i = 0; i < playersLen; i++) {
+				players[i] = {
+					id: view.getInt16(),
+					team: view.getUint8(),
+					username: view.getString(view.getUint8()),
+				};
+			}
+			return {
+				host,
+				room,
+				players,
+			} as RoomMessage;
 		}
 		case Messages.MSG_SYSTEM: {
 			const sysTypeIdx = view.getUint8();
@@ -244,6 +256,7 @@ export function decode(msg: ArrayBuffer): GenericServerMessage {
 		case Messages.MSG_CHATTED:
 		case Messages.MSG_MAP:
 		case Messages.MSG_STATE:
+		case Messages.MSG_ROOM:
 		case Messages.MSG_SYSTEM:
 		case Messages.MSG_ERROR:
 			return {
@@ -260,6 +273,7 @@ export function decode(msg: ArrayBuffer): GenericServerMessage {
 		case Messages.MSG_MOUSEPRESS:
 		case Messages.MSG_MOUSERELEASE:
 		case Messages.MSG_MOUSEMOVE:
+		case Messages.MSG_QUERY:
 		case Messages.MSG_CHAT:
 		default:
 			throw new Error("Not Recivable " + Messages[msgType]);
@@ -312,6 +326,12 @@ export function isStateMessage(
 	message: GenericServerMessage
 ): message is TypedStateMessage {
 	return message.type === Messages.MSG_STATE;
+}
+
+export function isRoomMessage(
+	message: GenericServerMessage
+): message is TypedRoomMessage {
+	return message.type === Messages.MSG_ROOM;
 }
 
 export function isSystemMessage(

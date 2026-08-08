@@ -4,7 +4,7 @@ import type {
 	GenericClientMessage,
 } from "./types";
 
-export function encode(msg: GenericClientMessage): Uint8Array {
+export function encode(msg: GenericClientMessage): Uint8Array<ArrayBuffer> {
 	if (msg.type >= Messages.length) {
 		throw new Error("Unknown message type" + msg.type);
 	}
@@ -15,7 +15,8 @@ export function encode(msg: GenericClientMessage): Uint8Array {
 		case Messages.MSG_START:
 		case Messages.MSG_TEAM:
 		case Messages.MSG_MOUSEPRESS:
-		case Messages.MSG_MOUSERELEASE: {
+		case Messages.MSG_MOUSERELEASE:
+		case Messages.MSG_QUERY: {
 			const buf = new Uint8Array(1);
 			buf[0] = msg.type;
 			return buf;

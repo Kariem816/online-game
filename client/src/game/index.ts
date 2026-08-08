@@ -2,9 +2,9 @@ import Input, { Mouse } from "../input";
 import GameMap from "../map";
 import { Weapons } from "../weapons";
 import { Camera } from "./camera";
-import { copyText } from "../utils";
+import { clamp, copyText } from "../utils";
 import { appendSystemMessage } from "../chat";
-import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings } from "../msgs";
+import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings, type RoomMessage } from "../msgs";
 import { theme } from "../consts";
 import { Team, TWeapon } from "../consts";
 import type { Point } from "../geometry";
@@ -47,7 +47,8 @@ export default class Game {
 
     input: Input;
 
-    game: StateMessage;
+    gameState: StateMessage;
+    roomState?: RoomMessage;
     map: GameMap;
     camera: Camera;
 
@@ -64,9 +65,10 @@ export default class Game {
 
         this.input = new Input(renderer);
 
-        this.game = { host: 0, players: [], room: "", state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0 } };
+        this.gameState = { players: [], state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0 } };
         this.map = new GameMap();
         this.camera = new Camera({ x: 0, y: 0, w: 0, h: 0 }, 0, 0, 1);
+        this.network.send(Messages.MSG_QUERY);
 
         const { settings, ...myData } = extras;
         this.settings = settings;
@@ -91,11 +93,11 @@ export default class Game {
     }
 
     hasGameStarted() {
-        return this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing;
+        return this.gameState.state.phase === GamePhases.GettingReady || this.gameState.state.phase === GamePhases.Playing;
     }
 
     onStateUpdate(state: StateMessage) {
-        this.game = state;
+        this.gameState = state;
         this.isServerUpdated = true;
         const gameStarted = this.hasGameStarted();
         if (gameStarted && !this.gameStarted) {
@@ -109,6 +111,10 @@ export default class Game {
         } else if (this.gameJustEnded) {
             this.gameJustEnded = false;
         }
+    }
+
+    onRoomQuery(room: RoomMessage) {
+        this.roomState = room;
     }
 
     onMapUpdate(map: MapMessage) {
@@ -157,7 +163,7 @@ export default class Game {
     }
 
     getMyPlayer() {
-        return this.game.players.find((p) => p.user.id === this.myData.id)!;
+        return this.gameState.players.find((p) => p.id === this.myData.id)!;
     }
 
     update(dt: number) {
@@ -166,8 +172,8 @@ export default class Game {
         this.fps = calcFPS(dt);
 
         // Players State
-        if (this.game.state.phase === GamePhases.Playing && !this.isServerUpdated) {
-            for (const player of this.game.players) {
+        if (this.gameState.state.phase === GamePhases.Playing && !this.isServerUpdated) {
+            for (const player of this.gameState.players) {
                 let newX = player.x + player.vx * dt * this.settings.playerSpeed;
                 let newY = player.y + player.vy * dt * this.settings.playerSpeed;
 
@@ -228,7 +234,7 @@ export default class Game {
         this.input.update();
         const network = this.network;
 
-        if (this.game.state.phase === GamePhases.Playing) {
+        if (this.gameState.state.phase === GamePhases.Playing) {
             // Movement
             if (this.input.isKeyPressed("KeyW")) {
                 network.send(Messages.MSG_MOVE, {
@@ -318,7 +324,7 @@ export default class Game {
             }
         }
 
-        if (this.game.state.phase === GamePhases.GettingReady || this.game.state.phase === GamePhases.Playing) {
+        if (this.gameState.state.phase === GamePhases.GettingReady || this.gameState.state.phase === GamePhases.Playing) {
             // Aiming
             const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());
             network.send(Messages.MSG_MOUSEMOVE, gameCoords);
@@ -334,7 +340,7 @@ export default class Game {
             }
         }
 
-        if (this.game.state.phase === GamePhases.WaitingForPlayers || this.game.state.phase === GamePhases.GameOver) {
+        if (this.gameState.state.phase === GamePhases.WaitingForPlayers || this.gameState.state.phase === GamePhases.GameOver) {
             // Menu
             if (this.input.isKeyReleased("KeyQ")) {
                 network.send(Messages.MSG_START);
@@ -346,7 +352,7 @@ export default class Game {
 
         // Debug
         if (this.input.isKeyReleased("KeyR")) {
-            console.log({ state: this.game, serverUpdated: this.isServerUpdated });
+            console.log({ state: this.gameState, serverUpdated: this.isServerUpdated });
         }
         if (this.input.isKeyReleased("KeyF")) {
             this.fpsCounter = !this.fpsCounter;
@@ -370,11 +376,11 @@ export default class Game {
         this.ctx.fillRect(0, 0, rendererWidth, rendererHeight);
 
         // Top Left Corner
-        if (this.input.isMouseOver({ x: 0, y: 0, w: wOffset * 2, h: hOffset })) {
+        if (this.roomState && this.input.isMouseOver({ x: 0, y: 0, w: wOffset * 2, h: hOffset })) {
             this.ctx.fillStyle = theme.colors.backgroundHighlight;
             this.ctx.fillRect(0, 0, wOffset * 2, hOffset);
             if (this.input.isMouseReleased(Mouse.Left)) {
-                copyText(this.game.room);
+                copyText(this.roomState.room);
                 appendSystemMessage(SystemMessageType.SYS_MSG_INFO, "Copied room code to clipboard");
             }
         }
@@ -382,12 +388,12 @@ export default class Game {
         this.ctx.font = "30px Arial";
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "middle";
-        this.ctx.fillText(this.game.room, wOffset, hOffset / 2, wOffset - 16);
+        this.ctx.fillText(this.roomState?.room || "", wOffset, hOffset / 2, wOffset - 16);
 
         // Top bar
         let timeLeft: number;
-        if (this.game.state.phase === GamePhases.Playing || this.game.state.phase === GamePhases.GettingReady) {
-            const start = this.game.startedAt?.getTime() ?? 0;
+        if (this.gameState.state.phase === GamePhases.Playing || this.gameState.state.phase === GamePhases.GettingReady) {
+            const start = this.gameState.startedAt?.getTime() ?? 0;
             const now = Date.now();
             timeLeft = this.settings.gameLength - (now - start);
             this.ctx.fillStyle = theme.colors.foreground;
@@ -398,7 +404,7 @@ export default class Game {
                 const seconds = Math.floor(timeLeft / 1000 % 60).toString().padStart(2, "0");
                 this.ctx.fillText(`${minutes}:${seconds}`, wOffset + wRest / 2, hOffset / 2);
             }
-        } else if (this.game.state.phase === GamePhases.GameOver) {
+        } else if (this.gameState.state.phase === GamePhases.GameOver) {
             this.ctx.fillStyle = theme.colors.foreground;
             this.ctx.fillText("Time is up", wOffset + wRest / 2, hOffset / 2);
         } else {
@@ -414,16 +420,16 @@ export default class Game {
         const middle = wOffset + wRest / 2;
         const scoreWidth = this.ctx.measureText("000").width;
         const playerSize = hOffset - padding;
-        const teamA = this.game.players.filter((p) => p.team === Team.TeamA);
-        const teamB = this.game.players.filter((p) => p.team === Team.TeamB);
+        const teamA = this.gameState.players.filter((p) => p.team === Team.TeamA);
+        const teamB = this.gameState.players.filter((p) => p.team === Team.TeamB);
 
         // Team A
         this.ctx.fillStyle = teamAColor;
         let end = middle - (timerWidth / 2) - padding;
-        this.ctx.fillText(this.game.state.scoreA.toString(), end - scoreWidth / 2, hOffset / 2);
+        this.ctx.fillText(this.gameState.state.scoreA.toString(), end - scoreWidth / 2, hOffset / 2);
         end -= scoreWidth + padding;
         for (const player of teamA) {
-            const isMe = player.user.id === this.myData.id;
+            const isMe = player.id === this.myData.id;
             Weapons[player.weapon].drawIcon(this.ctx, { x: end - padding - scoreWidth, y: padding / 2, w: playerSize, h: playerSize }, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
             end -= playerSize + padding;
         }
@@ -431,10 +437,10 @@ export default class Game {
         // Team B
         this.ctx.fillStyle = teamBColor;
         let start = middle + (timerWidth / 2) + padding;
-        this.ctx.fillText(this.game.state.scoreB.toString(), start + scoreWidth / 2, hOffset / 2);
+        this.ctx.fillText(this.gameState.state.scoreB.toString(), start + scoreWidth / 2, hOffset / 2);
         start += scoreWidth + padding;
         for (const player of teamB) {
-            const isMe = player.user.id === this.myData.id;
+            const isMe = player.id === this.myData.id;
             Weapons[player.weapon].drawIcon(this.ctx, { x: start, y: padding / 2, w: playerSize, h: playerSize }, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
             start += playerSize + padding;
         }
@@ -494,14 +500,14 @@ export default class Game {
             }
 
             // Render players
-            for (const player of this.game.players) {
+            for (const player of this.gameState.players) {
                 const x = player.x + mapWidthOffset;
                 const y = player.y + mapHeightOffset;
                 const color = theme.colors[player.team === Team.TeamA ? "teamA" : "teamB"];
 
-                const ringColor = player.user.id === this.game.host ?
+                const ringColor = player.id === this.roomState?.host ?
                     theme.colors.warning : theme.colors.foreground;
-                const withRing = player.user.id === this.game.host || player.user.id === this.myData.id;
+                const withRing = player.id === this.roomState?.host || player.id === this.myData.id;
 
                 // ring
                 this.ctx.fillStyle = color;
@@ -575,26 +581,34 @@ export default class Game {
                 );
             }
 
-            if (this.game.state.phase === GamePhases.GettingReady) {
-                const x = me.x + mapWidthOffset;
-                const y = me.y + mapHeightOffset;
+            if (this.gameState.state.phase === GamePhases.GettingReady) {
+                const x = (me.x + mapWidthOffset + 0.5) * cellWidth;
+                const y = (me.y + mapHeightOffset + 0.5) * cellHeight;
                 this.ctx.fillStyle = theme.colors.foreground;
                 this.ctx.textAlign = "center";
-                const secs = Math.floor((timeLeft! - this.settings.gameLength) / 1000);
-                this.ctx.fillText("Get ready! " + secs, (x + 0.5) * cellWidth, (y - 0.5) * cellHeight);
+                this.ctx.textBaseline = "top";
+                const secs = Math.max(Math.floor((timeLeft! - this.settings.gameLength) / 1000), 0);
+                const text = "Get ready! " + secs;
+                const textMetrics = this.ctx.measureText(text);
+                const halfTextWidth = textMetrics.width / 2;
+                const textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
+                this.ctx.fillText(text,
+                    clamp(x, wOffset + halfTextWidth, rendererWidth - wOffset - halfTextWidth),
+                    clamp(y, hOffset, rendererHeight - textHeight)
+                );
             }
 
             this.ctx.restore();
         } else {
             this.ctx.fillStyle = theme.colors.foreground;
             this.ctx.font = "60px Arial";
-            switch (this.game.state.phase) {
+            switch (this.gameState.state.phase) {
                 case GamePhases.WaitingForPlayers: {
                     this.ctx.fillText("Waiting for players", rendererWidth / 2, hOffset + hRest / 2);
                 } break;
                 case GamePhases.GameOver: {
-                    const winner = this.game.state.scoreA > this.game.state.scoreB ? "Team A Wins"
-                        : this.game.state.scoreA < this.game.state.scoreB ? "Team B Wins" : "It's a Tie";
+                    const winner = this.gameState.state.scoreA > this.gameState.state.scoreB ? "Team A Wins"
+                        : this.gameState.state.scoreA < this.gameState.state.scoreB ? "Team B Wins" : "It's a Tie";
                     this.ctx.fillText(winner, rendererWidth / 2, hOffset + hRest / 2);
                 } break;
             }
@@ -627,9 +641,11 @@ export default class Game {
     }
 
     getUsername(id: number) {
-        for (const player of this.game.players) {
-            if (player.user.id === id) {
-                return player.user.username;
+        if (this.roomState) {
+            for (const player of this.gameState.players) {
+                if (player.id === id) {
+                    return this.roomState.players.find((u) => u.id === id)?.username || "Unknown";
+                }
             }
         }
         return "Unknown";

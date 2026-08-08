@@ -264,6 +264,14 @@ func (g *Game) AimUserTo(userId types.UserID, dx, dy int32) {
 	}
 }
 
+func (g Game) RoomMessage() msgs.RoomMessage {
+	return msgs.RoomMessage{
+		Host:    g.Host,
+		Room:    g.Room,
+		Players: g.Players.RoomMessage(),
+	}
+}
+
 func (g *Game) Update() []types.CellResult {
 	if !g.Started() {
 		return []types.CellResult{}
@@ -360,8 +368,6 @@ func (g *Game) BroadcastState(exclude ...types.UserID) {
 	m := at % 1000
 	s := int32((at - m) / 1000)
 	g.Broadcast(msgs.StateMessage{
-		Host: g.Host,
-		Room: g.Room,
 		StartedAt: types.NetworkTime{
 			Sec:   s,
 			Milli: int16(m),
@@ -371,7 +377,7 @@ func (g *Game) BroadcastState(exclude ...types.UserID) {
 			ScoreB: int32(g.State.ScoreB),
 			Phase:  g.State.Phase,
 		},
-		Players: g.Players.Foo(),
+		Players: g.Players.StateMessage(),
 	})
 }
 

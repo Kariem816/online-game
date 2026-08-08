@@ -295,6 +295,20 @@ func main() {
 				}
 
 				game.AimUserTo(id, mm.DX, mm.DY)
+			case msgs.MSG_QUERY:
+				if game == nil {
+					user.Error("You are not in a game")
+					continue
+				}
+
+				qm := msgs.QueryMessage{}
+				ok := qm.Parse(gmsg)
+				if !ok {
+					log.Println("[ERROR]: ParseQueryMessage", gmsg)
+				}
+
+				rm := game.RoomMessage()
+				user.SendMessage(rm)
 			case msgs.MSG_CHAT:
 				// TODO: Add support for commands
 				if game == nil {

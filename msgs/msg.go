@@ -80,11 +80,18 @@ type MapMessage struct {
 }
 
 type StateMessage struct {
-	Host      types.UserID
-	Room      string
 	StartedAt types.NetworkTime
 	State     types.StateMessageState
 	Players   []types.StateMessagePlayer
+}
+
+// TODO: we only support querying room info
+type QueryMessage struct{}
+
+type RoomMessage struct {
+	Host    types.UserID
+	Room    string
+	Players []types.RoomMessagePlayer
 }
 
 type SystemMessage struct {
@@ -96,31 +103,33 @@ type ErrorMessage struct {
 }
 
 const (
-	MSG_WLCM         uint8 = iota
-	MSG_HOST         uint8 = iota
-	MSG_HOSTED       uint8 = iota
-	MSG_JOIN         uint8 = iota
-	MSG_JOINED       uint8 = iota
-	MSG_LEAVE        uint8 = iota
-	MSG_LEFT         uint8 = iota
-	MSG_START        uint8 = iota
-	MSG_STARTED      uint8 = iota
-	MSG_TEAM         uint8 = iota
-	MSG_TEAMED       uint8 = iota
-	MSG_WEAPON       uint8 = iota
-	MSG_MOVE         uint8 = iota
-	MSG_MOVED        uint8 = iota
-	MSG_MOUSEPRESS   uint8 = iota
-	MSG_MOUSERELEASE uint8 = iota
-	MSG_MOUSEMOVE    uint8 = iota
-	MSG_SHOT         uint8 = iota
-	MSG_CHAT         uint8 = iota
-	MSG_CHATTED      uint8 = iota
-	MSG_MAP          uint8 = iota
-	MSG_STATE        uint8 = iota
-	MSG_SYSTEM       uint8 = iota
-	MSG_ERROR        uint8 = iota
-	MSG_LEN          uint8 = iota
+	MSG_WLCM uint8 = iota
+	MSG_HOST
+	MSG_HOSTED
+	MSG_JOIN
+	MSG_JOINED
+	MSG_LEAVE
+	MSG_LEFT
+	MSG_START
+	MSG_STARTED
+	MSG_TEAM
+	MSG_TEAMED
+	MSG_WEAPON
+	MSG_MOVE
+	MSG_MOVED
+	MSG_MOUSEPRESS
+	MSG_MOUSERELEASE
+	MSG_MOUSEMOVE
+	MSG_SHOT
+	MSG_CHAT
+	MSG_CHATTED
+	MSG_MAP
+	MSG_STATE
+	MSG_QUERY
+	MSG_ROOM
+	MSG_SYSTEM
+	MSG_ERROR
+	MSG_LEN
 )
 
 const (
@@ -244,10 +253,6 @@ func (sm *StartMessage) Parse(gm GenericMessage) bool {
 	return true
 }
 
-// func (sm StartedMessage) Buffer() (*bytes.Buffer, bool) {
-
-// }
-
 func (tm *TeamMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_TEAM {
 		return false
@@ -259,10 +264,6 @@ func (tm *TeamMessage) Parse(gm GenericMessage) bool {
 
 	return true
 }
-
-// func (tm TeamedMessage) Buffer() (*bytes.Buffer, bool) {
-
-// }
 
 func (wm *WeaponMessage) Parse(gm GenericMessage) bool {
 	if gm.Type != MSG_WEAPON {
@@ -402,11 +403,6 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	buf := new(bytes.Buffer)
 
 	buf.WriteByte(MSG_STATE)
-	binary.Write(buf, binary.LittleEndian, sm.Host)
-	if len(sm.Room) != 4 {
-		return nil, false
-	}
-	buf.WriteString(sm.Room)
 	binary.Write(buf, binary.LittleEndian, sm.StartedAt.Sec)
 	binary.Write(buf, binary.LittleEndian, sm.StartedAt.Milli)
 	binary.Write(buf, binary.LittleEndian, sm.State.ScoreA)
@@ -415,15 +411,44 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 	buf.WriteByte(uint8(len(sm.Players)))
 
 	for _, player := range sm.Players {
-		binary.Write(buf, binary.LittleEndian, player.User.ID)
-		binary.Write(buf, binary.LittleEndian, player.Team)
-		binary.Write(buf, binary.LittleEndian, player.Weapon)
+		binary.Write(buf, binary.LittleEndian, player.ID)
+		buf.WriteByte(byte(player.Team))
+		buf.WriteByte(byte(player.Weapon))
 		player.Pos.Write(buf)
 		player.Vel.Write(buf)
 		binary.Write(buf, binary.LittleEndian, player.Theta)
 		binary.Write(buf, binary.LittleEndian, player.Cooldown)
-		binary.Write(buf, binary.LittleEndian, uint8(len(player.User.Username)))
-		buf.WriteString(player.User.Username)
+	}
+
+	return buf, true
+}
+
+func (qm *QueryMessage) Parse(gm GenericMessage) bool {
+	if gm.Type != MSG_QUERY {
+		return false
+	}
+
+	if len(gm.Args) > 0 {
+		return false
+	}
+
+	return true
+}
+
+func (rm RoomMessage) Buffer() (*bytes.Buffer, bool) {
+	buf := new(bytes.Buffer)
+
+	buf.WriteByte(MSG_ROOM)
+	binary.Write(buf, binary.LittleEndian, rm.Host)
+	buf.WriteByte(byte(len(rm.Room)))
+	buf.WriteString(rm.Room)
+	buf.WriteByte(uint8(len(rm.Players)))
+
+	for _, player := range rm.Players {
+		binary.Write(buf, binary.LittleEndian, player.ID)
+		buf.WriteByte(byte(player.Team))
+		buf.WriteByte(byte(len(player.Username)))
+		buf.WriteString(player.Username)
 	}
 
 	return buf, true

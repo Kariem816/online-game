@@ -74,6 +74,9 @@ export default class Application {
                 });
             }
         });
+        network.on("room", (msg) => {
+            that.game?.onRoomQuery(msg);
+        });
         network.on("map", (msg) => {
             that.game?.onMapUpdate(msg);
         });

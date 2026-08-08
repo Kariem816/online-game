@@ -42,6 +42,12 @@ export class StateEvent extends CustomEvent<msgs.StateMessage> {
     }
 }
 
+export class RoomEvent extends CustomEvent<msgs.RoomMessage> {
+    constructor(data: msgs.RoomMessage) {
+        super("room", { detail: data });
+    }
+}
+
 export class MapEvent extends CustomEvent<msgs.MapMessage> {
     constructor(data: msgs.MapMessage) {
         super("map", { detail: data });

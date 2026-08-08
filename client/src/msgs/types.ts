@@ -23,6 +23,8 @@ export enum Messages {
 	MSG_CHATTED,
 	MSG_MAP,
 	MSG_STATE,
+	MSG_QUERY,
+	MSG_ROOM,
 	MSG_SYSTEM,
 	MSG_ERROR,
 	length,
@@ -108,8 +110,6 @@ export type MapMessage = {
 };
 
 export type StateMessage = {
-	host: number;
-	room: string;
 	startedAt?: Date;
 	state: {
 		scoreA: number;
@@ -117,10 +117,7 @@ export type StateMessage = {
 		phase: number;
 	};
 	players: {
-		user: {
-			id: number;
-			username: string;
-		};
+		id: number;
 		team: Team;
 		weapon: TWeapon;
 		x: number;
@@ -129,6 +126,17 @@ export type StateMessage = {
 		vy: number;
 		theta: number;
 		cooldown: number;
+	}[];
+};
+
+export type QueryMessage = undefined;
+export type RoomMessage = {
+	host: number;
+	room: string;
+	players: {
+		id: number;
+		team: Team;
+		username: string;
 	}[];
 };
 
@@ -243,6 +251,14 @@ export type TypedStateMessage = {
 	data: StateMessage;
 	type: Messages.MSG_STATE;
 };
+export type TypedQueryMessage = {
+	data: QueryMessage;
+	type: Messages.MSG_QUERY;
+};
+export type TypedRoomMessage = {
+	data: RoomMessage;
+	type: Messages.MSG_ROOM;
+};
 export type TypedSystemMessage = {
 	data: SystemMessage;
 	type: Messages.MSG_SYSTEM;
@@ -263,6 +279,7 @@ export type GenericServerMessage =
 	| TypedChattedMessage
 	| TypedMapMessage
 	| TypedStateMessage
+	| TypedRoomMessage
 	| TypedSystemMessage
 	| TypedErrorMessage;
 
@@ -277,5 +294,5 @@ export type GenericClientMessage =
 	| TypedMousePressMessage
 	| TypedMouseReleaseMessage
 	| TypedMouseMoveMessage
+	| TypedQueryMessage
 	| TypedChatMessage;
-	

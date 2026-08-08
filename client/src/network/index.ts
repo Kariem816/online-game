@@ -10,6 +10,7 @@ type NetworkEventMap = {
     hosted: msgs.HostedMessage;
     joined: msgs.JoinedMessage;
     state: msgs.StateMessage;
+    room: msgs.RoomMessage;
     map: msgs.MapMessage;
     left: void;
     chatted: msgs.ChattedMessage;
@@ -42,6 +43,8 @@ export default class Network extends EventTarget {
                 this.dispatchEvent(new events.JoinedEvent(msg.data));
             } else if (msgs.isStateMessage(msg)) {
                 this.dispatchEvent(new events.StateEvent(msg.data));
+            } else if (msgs.isRoomMessage(msg)) {
+                this.dispatchEvent(new events.RoomEvent(msg.data));
             } else if (msgs.isMapMessage(msg)) {
                 this.dispatchEvent(new events.MapEvent(msg.data));
             } else if (msgs.isLeftMessage(msg)) {
@@ -87,7 +90,7 @@ export default class Network extends EventTarget {
             { type: T }
         >["data"];
 
-        this.ws.send(msgs.encode({ type: t, data } as Extract<msgs.GenericClientMessage, { type: T }>));
+        this.ws.send(msgs.encode({ type: t, data } as Extract<msgs.GenericClientMessage, { type: T }>).buffer);
     }
 
     private async reconnect() {
