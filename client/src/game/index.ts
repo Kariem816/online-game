@@ -430,7 +430,24 @@ export default class Game {
         end -= scoreWidth + padding;
         for (const player of teamA) {
             const isMe = player.id === this.myData.id;
-            Weapons[player.weapon].drawIcon(this.ctx, { x: end - padding - scoreWidth, y: padding / 2, w: playerSize, h: playerSize }, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
+            const bb = { x: end - padding - scoreWidth, y: padding / 2, w: playerSize, h: playerSize };
+            Weapons[player.weapon].drawIcon(this.ctx, bb, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
+            // render player name
+            if (this.roomState && this.input.isMouseOver(bb)) {
+                const username = this.getUsername(player.id);
+                const textWidth = this.ctx.measureText(username).width;
+                this.ctx.strokeStyle = theme.colors.foreground;
+                this.ctx.lineWidth = 2;
+                this.ctx.fillStyle = theme.colors.backgroundHighlight;
+                
+                this.ctx.beginPath();
+                this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                this.ctx.fillStyle = theme.colors.teamA;
+                this.ctx.fillText(username, bb.x + (bb.w) / 2, hOffset / 2);
+            }
             end -= playerSize + padding;
         }
 
@@ -441,7 +458,24 @@ export default class Game {
         start += scoreWidth + padding;
         for (const player of teamB) {
             const isMe = player.id === this.myData.id;
-            Weapons[player.weapon].drawIcon(this.ctx, { x: start, y: padding / 2, w: playerSize, h: playerSize }, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
+            const bb = { x: start, y: padding / 2, w: playerSize, h: playerSize };
+            Weapons[player.weapon].drawIcon(this.ctx, bb, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
+            // render player name
+            if (this.roomState && this.input.isMouseOver(bb)) {
+                const username = this.getUsername(player.id);
+                const textWidth = this.ctx.measureText(username).width;
+                this.ctx.strokeStyle = theme.colors.foreground;
+                this.ctx.lineWidth = 2;
+                this.ctx.fillStyle = theme.colors.backgroundHighlight;
+                
+                this.ctx.beginPath();
+                this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                this.ctx.fillStyle = theme.colors.teamB;
+                this.ctx.fillText(username, bb.x + (bb.w) / 2, hOffset / 2);
+            }
             start += playerSize + padding;
         }
 
