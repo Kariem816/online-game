@@ -13,11 +13,12 @@ import (
 )
 
 type Game struct {
-	Players Players
-	State   types.GameState
-	Host    types.UserID
-	Room    string
-	LC      bool // large change
+	Players     Players
+	Projectiles []types.Projectile
+	State       types.GameState
+	Host        types.UserID
+	Room        string
+	LC          bool // large change
 
 	StartedAt time.Time
 }
@@ -30,7 +31,7 @@ var Games = []*Game{}
 
 func NewGame(host *User) string {
 	var sb strings.Builder
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		sb.WriteRune(rune(65 + rand.Intn(26)))
 	}
 	room := sb.String()
@@ -277,11 +278,17 @@ func (g *Game) Update() []types.CellResult {
 		return []types.CellResult{}
 	}
 
-	cells := make([]types.CellResult, 0)
 	gameMap := g.State.GameMap
-	for _, player := range g.Players {
-		player.Update(&gameMap)
-		attacked := player.Weapon.Update()
+
+	currentProjectiles := append([]types.Projectile(nil), g.Projectiles...)
+	g.Projectiles = g.Projectiles[:0]
+
+	cells := make([]types.CellResult, 0)
+	for _, projectile := range currentProjectiles {
+		attacked := projectile.Update()
+		if projectile.IsAlive() {
+			g.Projectiles = append(g.Projectiles, projectile)
+		}
 
 		cells = slices.Grow(cells, len(attacked))
 		for _, tile := range attacked {
@@ -299,7 +306,7 @@ func (g *Game) Update() []types.CellResult {
 			}
 
 			var newTile types.Tile
-			switch player.Team {
+			switch projectile.Team() {
 			case TeamA:
 				newTile = TeamATile
 				g.State.ScoreA++
@@ -315,6 +322,11 @@ func (g *Game) Update() []types.CellResult {
 				State: newTile,
 			})
 		}
+	}
+
+	for _, player := range g.Players {
+		player.Update(&gameMap)
+		g.Projectiles = append(g.Projectiles, player.Weapon.Update()...)
 	}
 
 	if time.Since(g.StartedAt) > consts.GameDuration {
@@ -377,7 +389,8 @@ func (g *Game) BroadcastState(exclude ...types.UserID) {
 			ScoreB: int32(g.State.ScoreB),
 			Phase:  g.State.Phase,
 		},
-		Players: g.Players.StateMessage(),
+		Players:     g.Players.StateMessage(),
+		Projectiles: g.Projectiles,
 	})
 }
 

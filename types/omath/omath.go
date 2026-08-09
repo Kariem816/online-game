@@ -18,11 +18,20 @@ func (v Vector2) Polar() Polar {
 	return Polar{R: r, Theta: theta}
 }
 
-func (v Vector2) Write(w io.Writer) error {
-	if err := binary.Write(w, binary.LittleEndian, v.X); err != nil {
+func (v *Vector2) Decelerate(acceleration float32) {
+	polar := v.Polar()
+	polar.R -= acceleration
+	if polar.R < 0 {
+		polar.R = 0
+	}
+	*v = polar.Vector2()
+}
+
+func (v Vector2) Write(w io.Writer, order binary.ByteOrder) error {
+	if err := binary.Write(w, order, v.X); err != nil {
 		return err
 	}
-	return binary.Write(w, binary.LittleEndian, v.Y)
+	return binary.Write(w, order, v.Y)
 }
 
 type Polar struct {
@@ -48,9 +57,9 @@ type IVector2 struct {
 	Y int32
 }
 
-func (v IVector2) Write(w io.Writer) error {
-	if err := binary.Write(w, binary.LittleEndian, v.X); err != nil {
+func (v IVector2) Write(w io.Writer, order binary.ByteOrder) error {
+	if err := binary.Write(w, order, v.X); err != nil {
 		return err
 	}
-	return binary.Write(w, binary.LittleEndian, v.Y)
+	return binary.Write(w, order, v.Y)
 }

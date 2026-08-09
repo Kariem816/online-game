@@ -80,9 +80,10 @@ type MapMessage struct {
 }
 
 type StateMessage struct {
-	StartedAt types.NetworkTime
-	State     types.StateMessageState
-	Players   []types.StateMessagePlayer
+	StartedAt   types.NetworkTime
+	State       types.StateMessageState
+	Players     []types.StateMessagePlayer
+	Projectiles []types.Projectile
 }
 
 // TODO: we only support querying room info
@@ -173,7 +174,7 @@ func (wm WelcomeMessage) Buffer() (*bytes.Buffer, bool) {
 	for _, w := range wm.Settings.Weapons {
 		binary.Write(buf, binary.LittleEndian, w.ID)
 		binary.Write(buf, binary.LittleEndian, w.Cooldown)
-		binary.Write(buf, binary.LittleEndian, w.Radius)
+		binary.Write(buf, binary.LittleEndian, w.Range)
 		binary.Write(buf, binary.LittleEndian, uint8(len(w.Name)))
 		buf.WriteString(w.Name)
 	}
@@ -414,10 +415,20 @@ func (sm StateMessage) Buffer() (*bytes.Buffer, bool) {
 		binary.Write(buf, binary.LittleEndian, player.ID)
 		buf.WriteByte(byte(player.Team))
 		buf.WriteByte(byte(player.Weapon))
-		player.Pos.Write(buf)
-		player.Vel.Write(buf)
+		player.Pos.Write(buf, binary.LittleEndian)
+		player.Vel.Write(buf, binary.LittleEndian)
 		binary.Write(buf, binary.LittleEndian, player.Theta)
 		binary.Write(buf, binary.LittleEndian, player.Cooldown)
+	}
+
+	buf.WriteByte(uint8(len(sm.Projectiles)))
+	for i, projectile := range sm.Projectiles {
+		if i >= 255 {
+			log.Warnf("Too many projectiles to send in state message: %d", len(sm.Projectiles))
+			break
+		}
+		projBuf, _ := projectile.Serialize(binary.LittleEndian)
+		buf.Write(projBuf)
 	}
 
 	return buf, true

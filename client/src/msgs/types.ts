@@ -127,6 +127,14 @@ export type StateMessage = {
 		theta: number;
 		cooldown: number;
 	}[];
+	projectiles: {
+		x: number;
+		y: number;
+		vx: number;
+		vy: number;
+		acc: number;
+		team: Team;
+	}[];
 };
 
 export type QueryMessage = undefined;

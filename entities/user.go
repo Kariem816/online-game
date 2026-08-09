@@ -51,7 +51,7 @@ func (u *User) ToPlayer(team types.TeamID) *Player {
 	return &Player{
 		User:   u,
 		Team:   team,
-		Weapon: weapons.NewGun(),
+		Weapon: weapons.NewGun(team),
 	}
 }
 

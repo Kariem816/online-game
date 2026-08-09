@@ -62,7 +62,7 @@ type CellResult struct {
 type SettingsMessageWeapon struct {
 	ID       WeaponID
 	Cooldown uint32
-	Radius   float32
+	Range    float32
 	Name     string
 }
 

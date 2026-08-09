@@ -65,7 +65,7 @@ export default class Game {
 
         this.input = new Input(renderer);
 
-        this.gameState = { players: [], state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0 } };
+        this.gameState = { players: [], state: { phase: GamePhases.WaitingForPlayers, scoreA: 0, scoreB: 0 }, projectiles: [] };
         this.map = new GameMap();
         this.camera = new Camera({ x: 0, y: 0, w: 0, h: 0 }, 0, 0, 1);
         this.network.send(Messages.MSG_QUERY);
@@ -543,13 +543,15 @@ export default class Game {
                     theme.colors.warning : theme.colors.foreground;
                 const withRing = player.id === this.roomState?.host || player.id === this.myData.id;
 
-                // ring
+                // player
                 this.ctx.fillStyle = color;
                 const startX = Math.max(wOffset, x * cellWidth);
                 const startY = Math.max(hOffset, y * cellHeight);
                 const endX = Math.min(rendererWidth - wOffset, (x + 1) * cellWidth);
                 const endY = Math.min(rendererHeight, (y + 1) * cellHeight);
                 this.ctx.fillRect(startX, startY, endX - startX, endY - startY);
+
+                // ring
                 if (withRing) {
                     this.ctx.save();
                     this.ctx.beginPath();
@@ -613,6 +615,17 @@ export default class Game {
                     { pos: { x: (x + 0.5) * cellWidth, y: (y + 0.5) * cellHeight }, theta: player.theta },
                     theme.colors.foreground
                 );
+            }
+
+            for (const projectile of this.gameState.projectiles) {
+                const x = projectile.x + mapWidthOffset;
+                const y = projectile.y + mapHeightOffset;
+                const color = theme.colors[projectile.team === Team.TeamA ? "teamA" : "teamB"];
+
+                this.ctx.beginPath();
+                this.ctx.arc((x + 0.5) * cellWidth, (y + 0.5) * cellHeight, 0.2 * cellWidth, 0, 2 * Math.PI);
+                this.ctx.fillStyle = color;
+                this.ctx.fill();
             }
 
             if (this.gameState.state.phase === GamePhases.GettingReady) {

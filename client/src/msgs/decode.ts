@@ -181,11 +181,26 @@ function decodeMsgData(
 					cooldown: view.getUint8(),
 				};
 			}
+			const projectilesLen = view.getUint8();
+			const projectiles = new Array<StateMessage["projectiles"][number]>(
+				projectilesLen
+			);
+			for (let i = 0; i < projectilesLen; i++) {
+				projectiles[i] = {
+					x: view.getFloat32(),
+					y: view.getFloat32(),
+					vx: view.getFloat32(),
+					vy: view.getFloat32(),
+					acc: view.getFloat32(),
+					team: view.getUint8(),
+				};
+			}
 
 			return {
 				startedAt,
 				state,
 				players,
+				projectiles,
 			} as StateMessage;
 		}
 		case Messages.MSG_ROOM: {

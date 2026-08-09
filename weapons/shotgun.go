@@ -1,6 +1,7 @@
 package weapons
 
 import (
+	"encoding/binary"
 	"time"
 
 	"online-game/consts"
@@ -12,23 +13,30 @@ import (
 
 type Shotgun struct {
 	BaseWeapon
-	spread    float32
-	hitCenter omath.Vector2
-	theta     float32
+	spread float32
 }
 
+type ShotgunShell BaseProjectile
+
+// weapon parameters
 const ShotgunCooldown = 1000 * time.Millisecond
+const ShotgunRange = 2
+const ShotgunSpread = 0.5
 
-var baseShotgun = BaseWeapon{
-	id:       WEAPON_SHOTGUN,
-	cooldown: ShotgunCooldown,
-	radius:   2,
-}
+// projectile parameters
+const ShotgunShellInitialSpeed = 1.0 // square units per tick
+const ShotgunShellDeceleration = 0.0 // square units per tick^2
+const ShotgunShellLifetime = 250 * time.Millisecond
 
-func NewShotgun() *Shotgun {
+func NewShotgun(team types.TeamID) *Shotgun {
 	return &Shotgun{
-		BaseWeapon: baseShotgun,
-		spread:     1,
+		BaseWeapon: BaseWeapon{
+			id:       WEAPON_SHOTGUN,
+			teamId:   team,
+			cooldown: ShotgunCooldown,
+			maxRange: ShotgunRange,
+		},
+		spread: ShotgunSpread,
 	}
 }
 
@@ -36,7 +44,7 @@ func (s *Shotgun) Name() string {
 	return "Shotgun"
 }
 
-func (s *Shotgun) Update() []omath.IVector2 {
+func (s *Shotgun) Update() []types.Projectile {
 	if s.cooldown > 0 {
 		s.cooldown -= consts.GameTick
 	}
@@ -45,43 +53,24 @@ func (s *Shotgun) Update() []omath.IVector2 {
 	}
 
 	if s.held && s.cooldown == 0 {
-		return s.shoot()
+		mainShell := ShotgunShell{
+			Pos:      s.pos,
+			Vel:      omath.Polar{R: ShotgunShellInitialSpeed, Theta: s.theta}.Vector2(),
+			TeamID:   s.teamId,
+			Lifetime: ShotgunShellLifetime,
+		}
+		shellLeft := mainShell
+		shellLeft.Vel = omath.Polar{R: ShotgunShellInitialSpeed, Theta: s.theta - math32.Pi*s.spread/4}.Vector2()
+		shellRight := mainShell
+		shellRight.Vel = omath.Polar{R: ShotgunShellInitialSpeed, Theta: s.theta + math32.Pi*s.spread/4}.Vector2()
+		s.setCooldown()
+		return []types.Projectile{&mainShell, &shellLeft, &shellRight}
 	}
-	return []omath.IVector2{}
+	return nil
 }
 
 func (s *Shotgun) Cooldown() time.Duration {
 	return ShotgunCooldown
-}
-
-// we have oop at home
-func (s *Shotgun) Aim(pos omath.Vector2, r float32, theta float32) {
-	s.theta = theta
-	s.hitCenter = omath.Vector2{
-		X: pos.X + 0.5 + s.radius*math32.Cos(theta),
-		Y: pos.Y + 0.5 + s.radius*math32.Sin(theta),
-	}
-}
-
-func (s *Shotgun) shoot() []omath.IVector2 {
-	cx := float32(s.hitCenter.X)
-	cy := float32(s.hitCenter.Y)
-
-	dxc := math32.Cos(s.theta) * s.spread
-	dyc := math32.Sin(s.theta) * s.spread
-
-	dxr := math32.Cos(s.theta+math32.Pi/2) * s.spread
-	dyr := math32.Sin(s.theta+math32.Pi/2) * s.spread
-
-	dxl := math32.Cos(s.theta-math32.Pi/2) * s.spread
-	dyl := math32.Sin(s.theta-math32.Pi/2) * s.spread
-
-	defer s.setCooldown()
-	return []omath.IVector2{
-		{X: int32(cx + dxc), Y: int32(cy + dyc)},
-		{X: int32(cx + dxr), Y: int32(cy + dyr)},
-		{X: int32(cx + dxl), Y: int32(cy + dyl)},
-	}
 }
 
 func (s *Shotgun) setCooldown() {
@@ -92,7 +81,34 @@ func (s *Shotgun) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
 		ID:       s.ID(),
 		Cooldown: uint32(s.Cooldown().Milliseconds()),
-		Radius:   s.radius,
+		Range:    s.maxRange,
 		Name:     s.Name(),
 	}
+}
+
+func (s *ShotgunShell) Update() []omath.IVector2 {
+	s.Vel.Decelerate(ShotgunShellDeceleration)
+
+	s.Pos.X += s.Vel.X
+	s.Pos.Y += s.Vel.Y
+
+	s.Lifetime -= consts.GameTick
+
+	if s.Lifetime <= 0 {
+		return []omath.IVector2{{X: int32(s.Pos.X), Y: int32(s.Pos.Y)}}
+	}
+
+	return nil
+}
+
+func (s *ShotgunShell) IsAlive() bool {
+	return s.Lifetime > 0
+}
+
+func (s *ShotgunShell) Team() types.TeamID {
+	return s.TeamID
+}
+
+func (s *ShotgunShell) Serialize(order binary.ByteOrder) ([]byte, error) {
+	return serializeBaseProjectile(order, s.Pos, s.Vel, ShotgunShellDeceleration, s.TeamID)
 }
