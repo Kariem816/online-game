@@ -1,3 +1,4 @@
+import { Tile } from "./consts";
 import type { CellResult, MapMessage } from "./msgs";
 
 export default class GameMap {
@@ -26,6 +27,9 @@ export default class GameMap {
     }
 
     getTile(x: number, y: number) {
+        if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+            return Tile.Wall;
+        }
         return this.tiles[y * this.width + x];
     }
     
@@ -34,10 +38,10 @@ export default class GameMap {
     }
 
     getAround(x: number, y: number) {
-        const tile = this.tiles[y * this.width + x];
-        const bottom = this.tiles[(y + 1) * this.width + x];
-        const right = this.tiles[y * this.width + x + 1];
-        const bottomRight = this.tiles[(y + 1) * this.width + x + 1];
+        const tile = this.getTile(x, y);
+        const bottom = this.getTile(x, y + 1);
+        const right = this.getTile(x + 1, y);
+        const bottomRight = this.getTile(x + 1, y + 1);
         return { tile, bottom, right, bottomRight };
     }
 }
