@@ -204,11 +204,12 @@ func (g *Game) Start(userId types.UserID) error {
 			if Get(&g.State.GameMap, px, py) != WallTile {
 				player.Pos.X = float32(px)
 				player.Pos.Y = float32(py)
-				player.Vel.X = 0
-				player.Vel.Y = 0
 				break
 			}
 		}
+		player.Vel.X = 0
+		player.Vel.Y = 0
+		player.Weapon.Release()
 	}
 
 	return nil

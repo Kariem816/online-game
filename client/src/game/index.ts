@@ -657,21 +657,23 @@ export default class Game {
                 // check if the text box is overlapping with the player, if so, move it up
                 if (Collision.rectRect(bb, playerBB)) {
                     // check where to move the text box, up or down, based on which side has more space
-                    const spaceAbove = bb.y - hOffset;
-                    const spaceBelow = rendererHeight - hOffset - hRest - (bb.y + bb.h);
-                    if (spaceAbove > spaceBelow) {
-                        bb.y = Math.max(hOffset, playerBB.y - bb.h - padding);
-                    } else {
-                        bb.y = Math.min(rendererHeight - hOffset - bb.h, playerBB.y + playerBB.h + padding);
+                    const spaceAbove = playerBB.y - hOffset;
+                    const spaceBelow = hRest - spaceAbove - playerBB.h;
+                    if (spaceBelow > bb.h) {
+                        bb.y = playerBB.y + bb.h;
+                    } else if (spaceAbove > bb.h) {
+                        bb.y = playerBB.y - playerBB.h;
                     }
+                }
 
-                    const spaceLeft = bb.x - wOffset;
-                    const spaceRight = rendererWidth - wOffset - (bb.x + bb.w);
-                    if (spaceLeft > spaceRight) {
-                        bb.x = Math.max(wOffset, playerBB.x - bb.w - padding);
-                    } else {
-                        bb.x = Math.min(rendererWidth - wOffset - bb.w, playerBB.x + playerBB.w + padding);
-                    }
+                if (Collision.rectRect(bb, playerBB)) {
+                    const spaceLeft = playerBB.x - wOffset;
+                    const spaceRight = wRest - spaceLeft - playerBB.w;
+                    if (spaceRight > bb.w) {
+                        bb.x = playerBB.x + playerBB.w;
+                    } else if (spaceLeft > bb.w) {
+                        bb.x = playerBB.x - bb.w;
+                    }       
                 }
 
 
