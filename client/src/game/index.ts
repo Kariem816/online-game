@@ -7,6 +7,7 @@ import { appendSystemMessage } from "../chat";
 import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type MapMessage, type StateMessage, type GameSettings, type RoomMessage } from "../msgs";
 import { theme } from "../consts";
 import { Team, TWeapon } from "../consts";
+import Collision from "../collision";
 import type { Point } from "../geometry";
 import type Network from "../network";
 
@@ -220,11 +221,11 @@ export default class Game {
                 }
             }
             for (const proj of this.gameState.projectiles) {
-                const polarV = {r: Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy), theta: Math.atan2(proj.vy, proj.vx)};
+                const polarV = { r: Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy), theta: Math.atan2(proj.vy, proj.vx) };
                 polarV.r = clamp(polarV.r - proj.acc * dt, 0, polarV.r);
                 proj.vx = polarV.r * Math.cos(polarV.theta);
                 proj.vy = polarV.r * Math.sin(polarV.theta);
-                
+
                 proj.x += proj.vx * dt;
                 proj.y += proj.vy * dt;
             }
@@ -448,7 +449,7 @@ export default class Game {
                 this.ctx.strokeStyle = theme.colors.foreground;
                 this.ctx.lineWidth = 2;
                 this.ctx.fillStyle = theme.colors.backgroundHighlight;
-                
+
                 this.ctx.beginPath();
                 this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
                 this.ctx.fill();
@@ -476,7 +477,7 @@ export default class Game {
                 this.ctx.strokeStyle = theme.colors.foreground;
                 this.ctx.lineWidth = 2;
                 this.ctx.fillStyle = theme.colors.backgroundHighlight;
-                
+
                 this.ctx.beginPath();
                 this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
                 this.ctx.fill();
@@ -640,17 +641,56 @@ export default class Game {
             if (this.gameState.state.phase === GamePhases.GettingReady) {
                 const x = (me.x + mapWidthOffset + 0.5) * cellWidth;
                 const y = (me.y + mapHeightOffset + 0.5) * cellHeight;
-                this.ctx.fillStyle = theme.colors.foreground;
-                this.ctx.textAlign = "center";
-                this.ctx.textBaseline = "top";
+                const playerBB = { x: x - cellWidth / 2, y: y - cellHeight / 2, w: cellWidth, h: cellHeight };
+
                 const secs = Math.max(Math.floor((timeLeft! - this.settings.gameLength) / 1000), 0);
                 const text = "Get ready! " + secs;
                 const textMetrics = this.ctx.measureText(text);
                 const halfTextWidth = textMetrics.width / 2;
                 const textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
+                const bb = {
+                    x: clamp(x - halfTextWidth - padding / 2, wOffset, rendererWidth - wOffset - textMetrics.width - padding),
+                    y: clamp(y - padding / 2, hOffset, rendererHeight - textHeight - padding),
+                    w: textMetrics.width + padding,
+                    h: textHeight + padding,
+                }
+                // check if the text box is overlapping with the player, if so, move it up
+                if (Collision.rectRect(bb, playerBB)) {
+                    // check where to move the text box, up or down, based on which side has more space
+                    const spaceAbove = bb.y - hOffset;
+                    const spaceBelow = rendererHeight - hOffset - hRest - (bb.y + bb.h);
+                    if (spaceAbove > spaceBelow) {
+                        bb.y = Math.max(hOffset, playerBB.y - bb.h - padding);
+                    } else {
+                        bb.y = Math.min(rendererHeight - hOffset - bb.h, playerBB.y + playerBB.h + padding);
+                    }
+
+                    const spaceLeft = bb.x - wOffset;
+                    const spaceRight = rendererWidth - wOffset - (bb.x + bb.w);
+                    if (spaceLeft > spaceRight) {
+                        bb.x = Math.max(wOffset, playerBB.x - bb.w - padding);
+                    } else {
+                        bb.x = Math.min(rendererWidth - wOffset - bb.w, playerBB.x + playerBB.w + padding);
+                    }
+                }
+
+
+                // text frame
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = theme.colors.foreground;
+                this.ctx.fillStyle = theme.colors.backgroundHighlight;
+                this.ctx.beginPath();
+                this.ctx.roundRect(bb.x, bb.y, bb.w, bb.h, 10);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // text
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "top";
+                this.ctx.fillStyle = theme.colors.foreground;
                 this.ctx.fillText(text,
-                    clamp(x, wOffset + halfTextWidth, rendererWidth - wOffset - halfTextWidth),
-                    clamp(y, hOffset, rendererHeight - textHeight)
+                    bb.x + bb.w / 2,
+                    bb.y + (bb.h - textHeight) / 2
                 );
             }
 
