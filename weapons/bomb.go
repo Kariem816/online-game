@@ -7,6 +7,8 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
+
+	"github.com/chewxy/math32"
 )
 
 type Bomb struct {
@@ -88,8 +90,8 @@ func (p *BombProjectile) Update() []omath.IVector2 {
 	p.Lifetime -= consts.GameTick
 
 	if p.Lifetime <= 0 {
-		cx := int32(p.Pos.X)
-		cy := int32(p.Pos.Y)
+		cx := int32(math32.Round(p.Pos.X))
+		cy := int32(math32.Round(p.Pos.Y))
 		return []omath.IVector2{
 			{X: cx - 2, Y: cy},
 			{X: cx + 2, Y: cy},

@@ -7,6 +7,8 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
+
+	"github.com/chewxy/math32"
 )
 
 type Uzi struct {
@@ -87,7 +89,7 @@ func (b *UziBullet) Update() []omath.IVector2 {
 	b.Lifetime -= consts.GameTick
 
 	if b.Lifetime <= 0 {
-		return []omath.IVector2{{X: int32(b.Pos.X), Y: int32(b.Pos.Y)}}
+		return []omath.IVector2{{X: int32(math32.Round(b.Pos.X)), Y: int32(math32.Round(b.Pos.Y))}}
 	}
 
 	return nil

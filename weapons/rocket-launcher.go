@@ -7,6 +7,8 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
+
+	"github.com/chewxy/math32"
 )
 
 type RocketLauncher struct {
@@ -87,8 +89,8 @@ func (r *Rocket) Update() []omath.IVector2 {
 	r.Lifetime -= consts.GameTick
 
 	if r.Lifetime <= 0 {
-		cx := int32(r.Pos.X)
-		cy := int32(r.Pos.Y)
+		cx := int32(math32.Round(r.Pos.X))
+		cy := int32(math32.Round(r.Pos.Y))
 
 		return []omath.IVector2{
 			{X: cx - 1, Y: cy - 1},

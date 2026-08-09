@@ -7,6 +7,8 @@ import (
 	"online-game/consts"
 	"online-game/types"
 	"online-game/types/omath"
+
+	"github.com/chewxy/math32"
 )
 
 type Gun struct {
@@ -87,7 +89,7 @@ func (b *GunBullet) Update() []omath.IVector2 {
 
 	if b.Lifetime <= 0 {
 		return []omath.IVector2{
-			{X: int32(b.Pos.X), Y: int32(b.Pos.Y)},
+			{X: int32(math32.Round(b.Pos.X)), Y: int32(math32.Round(b.Pos.Y))},
 		}
 	}
 	return nil

@@ -96,7 +96,7 @@ func (s *ShotgunShell) Update() []omath.IVector2 {
 	s.Lifetime -= consts.GameTick
 
 	if s.Lifetime <= 0 {
-		return []omath.IVector2{{X: int32(s.Pos.X), Y: int32(s.Pos.Y)}}
+		return []omath.IVector2{{X: int32(math32.Round(s.Pos.X)), Y: int32(math32.Round(s.Pos.Y))}}
 	}
 
 	return nil
