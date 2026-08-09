@@ -19,9 +19,9 @@ const GunCooldown = 500 * time.Millisecond
 const GunRange = 1
 
 // projectile parameters
-const GunBulletInitialSpeed = 10.0 // square units per second
-const GunBulletDeceleration = 0.0  // square units per second^2
-const GunBulletLifetime = 500 * time.Millisecond
+const GunBulletInitialSpeed = 15.0 // square units per second
+const GunBulletDeceleration = 1.0  // square units per second^2
+const GunBulletLifetime = 300 * time.Millisecond
 
 func NewGun(team types.TeamID) *Gun {
 	return &Gun{

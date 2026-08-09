@@ -16,13 +16,13 @@ type RocketLauncher struct {
 type Rocket BaseProjectile
 
 // weapon parameters
-const RocketLauncherCooldown = 3000 * time.Millisecond
+const RocketLauncherCooldown = 2000 * time.Millisecond
 const RocketLauncherRange = 4
 
 // projectile parameters
-const RocketLauncherProjectileInitialSpeed = 10.0 // square units per second
-const RocketLauncherProjectileDeceleration = 0.2  // square units per second^2
-const RocketLauncherProjectileLifetime = 4000 * time.Millisecond
+const RocketLauncherProjectileInitialSpeed = 25.0 // square units per second
+const RocketLauncherProjectileDeceleration = 1.0  // square units per second^2
+const RocketLauncherProjectileLifetime = 750 * time.Millisecond
 
 func NewRocketLauncher(team types.TeamID) *RocketLauncher {
 	return &RocketLauncher{

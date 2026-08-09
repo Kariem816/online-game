@@ -20,8 +20,8 @@ const BombCooldown = 3000 * time.Millisecond
 const BombRange = 4
 
 // Projectile parameters
-const BombProjectileInitialSpeed = 5.0 // square units per second
-const BombProjectileDeceleration = 0.1 // square units per second^2
+const BombProjectileInitialSpeed = 12.0 // square units per second
+const BombProjectileDeceleration = 0.7  // square units per second^2
 const BombProjectileLifetime = 1000 * time.Millisecond
 
 func NewBomb(team types.TeamID) *Bomb {

@@ -21,12 +21,12 @@ type ShotgunShell BaseProjectile
 // weapon parameters
 const ShotgunCooldown = 1000 * time.Millisecond
 const ShotgunRange = 2
-const ShotgunSpread = 0.5
+const ShotgunSpread = 0.2
 
 // projectile parameters
-const ShotgunShellInitialSpeed = 10.0 // square units per second
-const ShotgunShellDeceleration = 0.0  // square units per second^2
-const ShotgunShellLifetime = 250 * time.Millisecond
+const ShotgunShellInitialSpeed = 20.0 // square units per second
+const ShotgunShellDeceleration = 1.0  // square units per second^2
+const ShotgunShellLifetime = 500 * time.Millisecond
 
 func NewShotgun(team types.TeamID) *Shotgun {
 	return &Shotgun{

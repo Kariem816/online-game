@@ -12,7 +12,7 @@ const GameTick = time.Millisecond * 1000 / TickRate
 const MapTick = TickRate * 5 // every 5 seconds
 
 const MaxPlayers = 8
-const GameDuration = 60 * time.Second
+const GameDuration = 90 * time.Second
 const ReadyDuration = 3500 * time.Millisecond
 const PlayerSpeed = 10.0
 

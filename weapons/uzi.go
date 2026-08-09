@@ -20,9 +20,9 @@ const UziCooldown = 200 * time.Millisecond
 const UziRange = 10
 
 // projectile parameters
-const UziBulletInitialSpeed = 15.0 // square units per second
+const UziBulletInitialSpeed = 20.0 // square units per second
 const UziBulletDeceleration = 0.0  // square units per second^2
-const UziBulletLifetime = 1000 * time.Millisecond
+const UziBulletLifetime = 666 * time.Millisecond
 
 func NewUzi(team types.TeamID) *Uzi {
 	return &Uzi{
