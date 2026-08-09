@@ -8,7 +8,7 @@ import { Messages, SystemMessageType, type CellResult, type WelcomeMessage, type
 import { theme } from "../consts";
 import { Team, TWeapon } from "../consts";
 import Collision from "../collision";
-import type { Point } from "../geometry";
+import type { Point, Rect } from "../geometry";
 import type Network from "../network";
 
 // Game States
@@ -100,6 +100,7 @@ export default class Game {
     onStateUpdate(state: StateMessage) {
         this.gameState = state;
         this.isServerUpdated = true;
+        this.network.send(Messages.MSG_QUERY);
         const gameStarted = this.hasGameStarted();
         if (gameStarted && !this.gameStarted) {
             this.gameJustStarted = true;
@@ -432,7 +433,7 @@ export default class Game {
         const playerSize = hOffset - padding;
         const teamA = this.gameState.players.filter((p) => p.team === Team.TeamA);
         const teamB = this.gameState.players.filter((p) => p.team === Team.TeamB);
-
+        let playerNameOverlay: { rect: Rect; text: string; team: Team } | null = null;
         // Team A
         this.ctx.fillStyle = teamAColor;
         let end = middle - (timerWidth / 2) - padding;
@@ -444,19 +445,11 @@ export default class Game {
             Weapons[player.weapon].drawIcon(this.ctx, bb, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
             // render player name
             if (this.roomState && this.input.isMouseOver(bb)) {
-                const username = this.getUsername(player.id);
-                const textWidth = this.ctx.measureText(username).width;
-                this.ctx.strokeStyle = theme.colors.foreground;
-                this.ctx.lineWidth = 2;
-                this.ctx.fillStyle = theme.colors.backgroundHighlight;
-
-                this.ctx.beginPath();
-                this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
-                this.ctx.fill();
-                this.ctx.stroke();
-
-                this.ctx.fillStyle = theme.colors.teamA;
-                this.ctx.fillText(username, bb.x + (bb.w) / 2, hOffset / 2);
+                playerNameOverlay = {
+                    text: this.getUsername(player.id),
+                    team: Team.TeamA,
+                    rect: bb,
+                };
             }
             end -= playerSize + padding;
         }
@@ -471,23 +464,34 @@ export default class Game {
             const bb = { x: start, y: padding / 2, w: playerSize, h: playerSize };
             Weapons[player.weapon].drawIcon(this.ctx, bb, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
             // render player name
-            if (this.roomState && this.input.isMouseOver(bb)) {
-                const username = this.getUsername(player.id);
-                const textWidth = this.ctx.measureText(username).width;
-                this.ctx.strokeStyle = theme.colors.foreground;
-                this.ctx.lineWidth = 2;
-                this.ctx.fillStyle = theme.colors.backgroundHighlight;
-
-                this.ctx.beginPath();
-                this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
-                this.ctx.fill();
-                this.ctx.stroke();
-
-                this.ctx.fillStyle = theme.colors.teamB;
-                this.ctx.fillText(username, bb.x + (bb.w) / 2, hOffset / 2);
+            if (!playerNameOverlay && this.roomState && this.input.isMouseOver(bb)) {
+                playerNameOverlay = {
+                    text: this.getUsername(player.id),
+                    team: Team.TeamB,
+                    rect: bb,
+                };
             }
             start += playerSize + padding;
         }
+
+        if (playerNameOverlay) {
+            const username = playerNameOverlay.text;
+            const textWidth = this.ctx.measureText(username).width;
+            const bb = playerNameOverlay.rect;
+
+            this.ctx.strokeStyle = theme.colors.foreground;
+            this.ctx.lineWidth = 2;
+            this.ctx.fillStyle = theme.colors.backgroundHighlight;
+
+            this.ctx.beginPath();
+            this.ctx.roundRect(bb.x + (bb.w - textWidth - padding) / 2, bb.y, textWidth + padding, bb.h, bb.w * 0.1);
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = playerNameOverlay.team === Team.TeamA ? theme.colors.teamA : theme.colors.teamB;
+            this.ctx.fillText(username, bb.x + (bb.w) / 2, hOffset / 2);
+        }
+
 
         if (this.fpsCounter) {
             // top right corner
@@ -673,7 +677,7 @@ export default class Game {
                         bb.x = playerBB.x + playerBB.w;
                     } else if (spaceLeft > bb.w) {
                         bb.x = playerBB.x - bb.w;
-                    }       
+                    }
                 }
 
 
