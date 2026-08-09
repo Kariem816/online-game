@@ -20,8 +20,8 @@ const RocketLauncherCooldown = 3000 * time.Millisecond
 const RocketLauncherRange = 4
 
 // projectile parameters
-const RocketLauncherProjectileInitialSpeed = 1.0  // square units per tick
-const RocketLauncherProjectileDeceleration = 0.02 // square units per tick^2
+const RocketLauncherProjectileInitialSpeed = 10.0 // square units per second
+const RocketLauncherProjectileDeceleration = 0.2  // square units per second^2
 const RocketLauncherProjectileLifetime = 4000 * time.Millisecond
 
 func NewRocketLauncher(team types.TeamID) *RocketLauncher {
@@ -78,10 +78,11 @@ func (l *RocketLauncher) ToSettingsMessage() types.SettingsMessageWeapon {
 }
 
 func (r *Rocket) Update() []omath.IVector2 {
-	r.Vel.Decelerate(RocketLauncherProjectileDeceleration)
+	dt := float32(consts.GameTick.Seconds())
+	r.Vel.Decelerate(RocketLauncherProjectileDeceleration * dt)
 
-	r.Pos.X += r.Vel.X
-	r.Pos.Y += r.Vel.Y
+	r.Pos.X += r.Vel.X * dt
+	r.Pos.Y += r.Vel.Y * dt
 
 	r.Lifetime -= consts.GameTick
 

@@ -20,8 +20,8 @@ const BombCooldown = 3000 * time.Millisecond
 const BombRange = 4
 
 // Projectile parameters
-const BombProjectileInitialSpeed = 0.3  // square units per tick
-const BombProjectileDeceleration = 0.01 // square units per tick^2
+const BombProjectileInitialSpeed = 5.0 // square units per second
+const BombProjectileDeceleration = 0.1 // square units per second^2
 const BombProjectileLifetime = 1000 * time.Millisecond
 
 func NewBomb(team types.TeamID) *Bomb {
@@ -79,10 +79,11 @@ func (b *Bomb) ToSettingsMessage() types.SettingsMessageWeapon {
 }
 
 func (p *BombProjectile) Update() []omath.IVector2 {
-	p.Vel.Decelerate(BombProjectileDeceleration)
+	dt := float32(consts.GameTick.Seconds())
+	p.Vel.Decelerate(BombProjectileDeceleration * dt)
 
-	p.Pos.X += p.Vel.X
-	p.Pos.Y += p.Vel.Y
+	p.Pos.X += p.Vel.X * dt
+	p.Pos.Y += p.Vel.Y * dt
 
 	p.Lifetime -= consts.GameTick
 

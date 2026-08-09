@@ -20,8 +20,8 @@ const UziCooldown = 200 * time.Millisecond
 const UziRange = 10
 
 // projectile parameters
-const UziBulletInitialSpeed = 1.5 // square units per tick
-const UziBulletDeceleration = 0.0 // square units per tick^2
+const UziBulletInitialSpeed = 15.0 // square units per second
+const UziBulletDeceleration = 0.0  // square units per second^2
 const UziBulletLifetime = 1000 * time.Millisecond
 
 func NewUzi(team types.TeamID) *Uzi {
@@ -78,10 +78,11 @@ func (u *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {
 }
 
 func (b *UziBullet) Update() []omath.IVector2 {
-	b.Vel.Decelerate(UziBulletDeceleration)
+	dt := float32(consts.GameTick.Seconds())
+	b.Vel.Decelerate(UziBulletDeceleration * dt)
 
-	b.Pos.X += b.Vel.X
-	b.Pos.Y += b.Vel.Y
+	b.Pos.X += b.Vel.X * dt
+	b.Pos.Y += b.Vel.Y * dt
 
 	b.Lifetime -= consts.GameTick
 

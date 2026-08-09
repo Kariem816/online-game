@@ -24,8 +24,8 @@ const ShotgunRange = 2
 const ShotgunSpread = 0.5
 
 // projectile parameters
-const ShotgunShellInitialSpeed = 1.0 // square units per tick
-const ShotgunShellDeceleration = 0.0 // square units per tick^2
+const ShotgunShellInitialSpeed = 10.0 // square units per second
+const ShotgunShellDeceleration = 0.0  // square units per second^2
 const ShotgunShellLifetime = 250 * time.Millisecond
 
 func NewShotgun(team types.TeamID) *Shotgun {
@@ -87,10 +87,11 @@ func (s *Shotgun) ToSettingsMessage() types.SettingsMessageWeapon {
 }
 
 func (s *ShotgunShell) Update() []omath.IVector2 {
-	s.Vel.Decelerate(ShotgunShellDeceleration)
+	dt := float32(consts.GameTick.Seconds())
+	s.Vel.Decelerate(ShotgunShellDeceleration * dt)
 
-	s.Pos.X += s.Vel.X
-	s.Pos.Y += s.Vel.Y
+	s.Pos.X += s.Vel.X * dt
+	s.Pos.Y += s.Vel.Y * dt
 
 	s.Lifetime -= consts.GameTick
 

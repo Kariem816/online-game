@@ -19,8 +19,8 @@ const GunCooldown = 500 * time.Millisecond
 const GunRange = 1
 
 // projectile parameters
-const GunBulletInitialSpeed = 1.0 // square units per tick
-const GunBulletDeceleration = 0.0 // square units per tick^2
+const GunBulletInitialSpeed = 10.0 // square units per second
+const GunBulletDeceleration = 0.0  // square units per second^2
 const GunBulletLifetime = 500 * time.Millisecond
 
 func NewGun(team types.TeamID) *Gun {
@@ -77,10 +77,11 @@ func (g *Gun) ToSettingsMessage() types.SettingsMessageWeapon {
 }
 
 func (b *GunBullet) Update() []omath.IVector2 {
-	b.Vel.Decelerate(GunBulletDeceleration)
+	dt := float32(consts.GameTick.Seconds())
+	b.Vel.Decelerate(GunBulletDeceleration * dt)
 
-	b.Pos.X += b.Vel.X
-	b.Pos.Y += b.Vel.Y
+	b.Pos.X += b.Vel.X * dt
+	b.Pos.Y += b.Vel.Y * dt
 
 	b.Lifetime -= consts.GameTick
 
