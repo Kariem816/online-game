@@ -219,6 +219,15 @@ export default class Game {
                     player.cooldown = Math.max(0, cooldownTime) / playerWeapon.cooldown * 100;
                 }
             }
+            for (const proj of this.gameState.projectiles) {
+                const polarV = {r: Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy), theta: Math.atan2(proj.vy, proj.vx)};
+                polarV.r = clamp(polarV.r - proj.acc * dt, 0, polarV.r);
+                proj.vx = polarV.r * Math.cos(polarV.theta);
+                proj.vy = polarV.r * Math.sin(polarV.theta);
+                
+                proj.x += proj.vx * dt;
+                proj.y += proj.vy * dt;
+            }
         } else {
             this.isServerUpdated = false;
         }
