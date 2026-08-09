@@ -5,7 +5,7 @@ all: build/game
 dev: dev-server dev-client
 
 dev-server:
-	go run .
+	air
 
 dev-client:
 	cd client && bun run dev
