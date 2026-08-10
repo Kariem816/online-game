@@ -39,7 +39,7 @@ func (u *User) SendMessage(msg msgs.ServerMessage) error {
 	if !ok {
 		return nil
 	}
-	return u.C.WriteMessage(websocket.BinaryMessage, buf.Bytes())
+	return u.Send(buf.Bytes())
 }
 
 func (u *User) Error(message string) {
