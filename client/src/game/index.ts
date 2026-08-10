@@ -709,8 +709,15 @@ export default class Game {
                     this.ctx.fillText("Waiting for players", rendererWidth / 2, hOffset + hRest / 2);
                 } break;
                 case GamePhases.GameOver: {
-                    const winner = this.gameState.state.scoreA > this.gameState.state.scoreB ? "Team A Wins"
-                        : this.gameState.state.scoreA < this.gameState.state.scoreB ? "Team B Wins" : "It's a Tie";
+                    let winner = "It's a Tie";
+                    this.ctx.fillStyle = theme.colors.foreground;
+                    if (this.gameState.state.scoreA > this.gameState.state.scoreB) {
+                        winner = "Team A Wins";
+                        this.ctx.fillStyle = theme.colors.teamA;
+                    } else if (this.gameState.state.scoreA < this.gameState.state.scoreB) {
+                        winner = "Team B Wins";
+                        this.ctx.fillStyle = theme.colors.teamB;
+                    }
                     this.ctx.fillText(winner, rendererWidth / 2, hOffset + hRest / 2);
                 } break;
             }
