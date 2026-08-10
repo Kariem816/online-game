@@ -18,7 +18,8 @@ type GunBullet BaseProjectile
 
 // weapon parameters
 const GunCooldown = 500 * time.Millisecond
-const GunRange = 1
+
+var GunRange = omath.UniformAccelerationMaxDistance(GunBulletInitialSpeed, -GunBulletDeceleration, GunBulletLifetime)
 
 // projectile parameters
 const GunBulletInitialSpeed = 15.0 // square units per second

@@ -19,7 +19,8 @@ type BombProjectile BaseProjectile
 
 // Weapon parameters
 const BombCooldown = 3000 * time.Millisecond
-const BombRange = 4
+
+var BombRange = omath.UniformAccelerationMaxDistance(BombProjectileInitialSpeed, -BombProjectileDeceleration, BombProjectileLifetime)
 
 // Projectile parameters
 const BombProjectileInitialSpeed = 12.0 // square units per second

@@ -19,7 +19,8 @@ type Rocket BaseProjectile
 
 // weapon parameters
 const RocketLauncherCooldown = 2000 * time.Millisecond
-const RocketLauncherRange = 4
+
+var RocketLauncherRange = omath.UniformAccelerationMaxDistance(RocketLauncherProjectileInitialSpeed, -RocketLauncherProjectileDeceleration, RocketLauncherProjectileLifetime)
 
 // projectile parameters
 const RocketLauncherProjectileInitialSpeed = 25.0 // square units per second

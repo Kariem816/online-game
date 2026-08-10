@@ -3,6 +3,7 @@ package omath
 import (
 	"encoding/binary"
 	"io"
+	"time"
 
 	"github.com/chewxy/math32"
 )
@@ -62,4 +63,9 @@ func (v IVector2) Write(w io.Writer, order binary.ByteOrder) error {
 		return err
 	}
 	return binary.Write(w, order, v.Y)
+}
+
+func UniformAccelerationMaxDistance(vi, a float32, dt time.Duration) float32 {
+	t := float32(dt.Seconds())
+	return vi*t + 0.5*a*t*t
 }

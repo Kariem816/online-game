@@ -20,8 +20,9 @@ type ShotgunShell BaseProjectile
 
 // weapon parameters
 const ShotgunCooldown = 1000 * time.Millisecond
-const ShotgunRange = 2
 const ShotgunSpread = 0.2
+
+var ShotgunRange = omath.UniformAccelerationMaxDistance(ShotgunShellInitialSpeed, -ShotgunShellDeceleration, ShotgunShellLifetime)
 
 // projectile parameters
 const ShotgunShellInitialSpeed = 20.0 // square units per second

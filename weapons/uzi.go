@@ -19,7 +19,8 @@ type UziBullet BaseProjectile
 
 // weapon parameters
 const UziCooldown = 200 * time.Millisecond
-const UziRange = 10
+
+var UziRange = omath.UniformAccelerationMaxDistance(UziBulletInitialSpeed, -UziBulletDeceleration, UziBulletLifetime)
 
 // projectile parameters
 const UziBulletInitialSpeed = 20.0 // square units per second
