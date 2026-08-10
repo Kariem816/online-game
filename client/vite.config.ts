@@ -8,7 +8,8 @@ export default {
                 changeOrigin: true,
                 ws: true,
             },
-        }
+        },
+        "allowedHosts": true,
     },
     build: {
         outDir: "../public",
