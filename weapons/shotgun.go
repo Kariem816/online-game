@@ -19,15 +19,16 @@ type Shotgun struct {
 type ShotgunShell BaseProjectile
 
 // weapon parameters
-const ShotgunCooldown = 1000 * time.Millisecond
+const ShotgunCooldown = 1500 * time.Millisecond
 const ShotgunSpread = 0.2
+const ShotgunShellCount = 5 // this must be odd
 
 var ShotgunRange = omath.UniformAccelerationMaxDistance(ShotgunShellInitialSpeed, -ShotgunShellDeceleration, ShotgunShellLifetime)
 
 // projectile parameters
 const ShotgunShellInitialSpeed = 20.0 // square units per second
-const ShotgunShellDeceleration = 1.0  // square units per second^2
-const ShotgunShellLifetime = 500 * time.Millisecond
+const ShotgunShellDeceleration = 1.5  // square units per second^2
+const ShotgunShellLifetime = 250 * time.Millisecond
 
 func NewShotgun(team types.TeamID) *Shotgun {
 	return &Shotgun{
@@ -54,18 +55,19 @@ func (s *Shotgun) Update() []types.Projectile {
 	}
 
 	if s.held && s.cooldown == 0 {
-		mainShell := ShotgunShell{
-			Pos:      s.pos,
-			Vel:      omath.Polar{R: ShotgunShellInitialSpeed, Theta: s.theta}.Vector2(),
-			TeamID:   s.teamId,
-			Lifetime: ShotgunShellLifetime,
+		shells := make([]types.Projectile, ShotgunShellCount)
+		for i := range ShotgunShellCount {
+			theta := s.theta - math32.Pi*s.spread*(float32(i-ShotgunShellCount/2)/4)
+			shell := ShotgunShell{
+				Pos:      s.pos,
+				Vel:      omath.Polar{R: ShotgunShellInitialSpeed, Theta: theta}.Vector2(),
+				TeamID:   s.teamId,
+				Lifetime: ShotgunShellLifetime,
+			}
+			shells[i] = &shell
 		}
-		shellLeft := mainShell
-		shellLeft.Vel = omath.Polar{R: ShotgunShellInitialSpeed, Theta: s.theta - math32.Pi*s.spread/4}.Vector2()
-		shellRight := mainShell
-		shellRight.Vel = omath.Polar{R: ShotgunShellInitialSpeed, Theta: s.theta + math32.Pi*s.spread/4}.Vector2()
 		s.setCooldown()
-		return []types.Projectile{&mainShell, &shellLeft, &shellRight}
+		return shells
 	}
 	return nil
 }
