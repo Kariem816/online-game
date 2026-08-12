@@ -179,32 +179,29 @@ export default class Game {
                 let newX = player.x + player.vx * dt * this.settings.playerSpeed;
                 let newY = player.y + player.vy * dt * this.settings.playerSpeed;
 
-                const { tile, bottom, right, bottomRight } = this.map.getAround(Math.floor(newX), Math.floor(newY));
-                const cornerX = newX - Math.floor(newX) > 0;
-                const cornerY = newY - Math.floor(newY) > 0;
+                const yTop = Math.floor(player.y);
+                const yBottom = Math.floor(player.y + 1 - 1e-4);
 
-                if (player.vx > 0) {
-                    if (right === Tiles.WallTile || (cornerY && bottomRight === Tiles.WallTile)) {
-                        newX = Math.floor(newX);
-                    }
+                const xL = Math.floor(newX);
+                const xR = Math.floor(newX + 1 - 1e-4);
+                const { tl, tr, bl, br } = this.map.getAround(xL, yTop, xR, yBottom);
+
+                if (player.vx > 0 && (tr === Tiles.WallTile || br === Tiles.WallTile)) {
+                    newX = Math.floor(newX);
+                } else if (player.vx < 0 && (tl === Tiles.WallTile || bl === Tiles.WallTile)) {
+                    newX = Math.ceil(newX);
                 }
 
-                if (player.vx < 0) {
-                    if (tile === Tiles.WallTile || (cornerY && bottom === Tiles.WallTile)) {
-                        newX = Math.ceil(newX);
-                    }
-                }
+                const xLeft = Math.floor(newX);
+                const xRight = Math.floor(newX + 1 - 1e-4);
+                const yT = Math.floor(newY);
+                const yB = Math.floor(newY + 1 - 1e-4);
+                const { tl: tl2, tr: tr2, bl: bl2, br: br2 } = this.map.getAround(xLeft, yT, xRight, yB);
 
-                if (player.vy > 0) {
-                    if (bottom === Tiles.WallTile || (cornerX && bottomRight === Tiles.WallTile)) {
-                        newY = Math.floor(newY);
-                    }
-                }
-
-                if (player.vy < 0) {
-                    if (tile === Tiles.WallTile || (cornerX && right === Tiles.WallTile)) {
-                        newY = Math.ceil(newY);
-                    }
+                if (player.vy > 0 && (bl2 === Tiles.WallTile || br2 === Tiles.WallTile)) {
+                    newY = Math.floor(newY);
+                } else if (player.vy < 0 && (tl2 === Tiles.WallTile || tr2 === Tiles.WallTile)) {
+                    newY = Math.ceil(newY);
                 }
 
                 player.x = newX;

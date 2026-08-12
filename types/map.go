@@ -19,11 +19,11 @@ func (m *GameMap) Get(x, y int32) Tile {
 	return m.Tiles[y*m.Width+x]
 }
 
-func (m *GameMap) GetAround(x, y int32) (tile, bottom, right, bottomRight Tile) {
-	tile = m.Get(x, y)
-	bottom = m.Get(x, y+1)
-	right = m.Get(x+1, y)
-	bottomRight = m.Get(x+1, y+1)
+func (m *GameMap) GetAround(x0, y0, x1, y1 int32) (topLeft, topRight, bottomLeft, bottomRight Tile) {
+	topLeft = m.Get(x0, y0)
+	topRight = m.Get(x1, y0)
+	bottomLeft = m.Get(x0, y1)
+	bottomRight = m.Get(x1, y1)
 	return
 }
 

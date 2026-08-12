@@ -100,33 +100,29 @@ func (p *Player) Update(gameMap *types.GameMap) {
 	newX := p.Pos.X + float32(p.Vel.X)*consts.PlayerSpeed*float32(consts.GameTick.Seconds())
 	newY := p.Pos.Y + float32(p.Vel.Y)*consts.PlayerSpeed*float32(consts.GameTick.Seconds())
 
-	tile, bottom, right, bottomRight := gameMap.GetAround(int32(math32.Floor(newX)), int32(math32.Floor(newY)))
-	cornerX := newX-math32.Floor(newX) > 0
-	cornerY := newY-math32.Floor(newY) > 0
+	yTop := int32(math32.Floor(p.Pos.Y))
+	yBottom := int32(math32.Floor(p.Pos.Y + 1 - 1e-4))
 
-	// Check for collisions
-	if p.Vel.X > 0 { // Moving right
-		if right == types.TileWall || (cornerY && bottomRight == types.TileWall) {
-			newX = math32.Floor(newX)
-		}
+	xL := int32(math32.Floor(newX))
+	xR := int32(math32.Floor(newX + 1 - 1e-4))
+	tl, tr, bl, br := gameMap.GetAround(xL, yTop, xR, yBottom)
+
+	if p.Vel.X > 0 && (tr == types.TileWall || br == types.TileWall) {
+		newX = math32.Floor(newX)
+	} else if p.Vel.X < 0 && (tl == types.TileWall || bl == types.TileWall) {
+		newX = math32.Ceil(newX)
 	}
 
-	if p.Vel.X < 0 { // Moving left
-		if tile == types.TileWall || (cornerY && bottom == types.TileWall) {
-			newX = math32.Ceil(newX)
-		}
-	}
+	xLeft := int32(math32.Floor(newX))
+	xRight := int32(math32.Floor(newX + 1 - 1e-4))
+	yT := int32(math32.Floor(newY))
+	yB := int32(math32.Floor(newY + 1 - 1e-4))
+	tl2, tr2, bl2, br2 := gameMap.GetAround(xLeft, yT, xRight, yB)
 
-	if p.Vel.Y > 0 { // Moving down
-		if bottom == types.TileWall || (cornerX && bottomRight == types.TileWall) {
-			newY = math32.Floor(newY)
-		}
-	}
-
-	if p.Vel.Y < 0 { // Moving up
-		if tile == types.TileWall || (cornerX && right == types.TileWall) {
-			newY = math32.Ceil(newY)
-		}
+	if p.Vel.Y > 0 && (bl2 == types.TileWall || br2 == types.TileWall) {
+		newY = math32.Floor(newY)
+	} else if p.Vel.Y < 0 && (tl2 == types.TileWall || tr2 == types.TileWall) {
+		newY = math32.Ceil(newY)
 	}
 
 	p.Pos.X = newX

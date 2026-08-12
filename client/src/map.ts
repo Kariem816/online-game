@@ -37,11 +37,11 @@ export default class GameMap {
         return this.tiles[i];
     }
 
-    getAround(x: number, y: number) {
-        const tile = this.getTile(x, y);
-        const bottom = this.getTile(x, y + 1);
-        const right = this.getTile(x + 1, y);
-        const bottomRight = this.getTile(x + 1, y + 1);
-        return { tile, bottom, right, bottomRight };
+    getAround(x0: number, y0: number, x1: number, y1: number) {
+        const tl = this.getTile(x0, y0);
+        const tr = this.getTile(x1, y0);
+        const bl = this.getTile(x0, y1);
+        const br = this.getTile(x1, y1);
+        return { tl, tr, bl, br };
     }
 }
