@@ -208,9 +208,6 @@ func (g *Game) Start(userId types.UserID) error {
 				break
 			}
 		}
-		player.Vel.X = 0
-		player.Vel.Y = 0
-		player.Weapon.Release()
 	}
 
 	return nil
@@ -228,9 +225,6 @@ func (g *Game) actuallyStart() {
 }
 
 func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
-	if g.State.Phase != types.PhasePlaying {
-		return
-	}
 	player := g.GetPlayer(userId)
 	if player != nil {
 		player.Move(direction, start)
@@ -238,9 +232,6 @@ func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
 }
 
 func (g *Game) HoldUserWeapon(userId types.UserID) {
-	if g.State.Phase != types.PhasePlaying {
-		return
-	}
 	player := g.GetPlayer(userId)
 	if player != nil {
 		player.Weapon.Hold()
@@ -248,9 +239,6 @@ func (g *Game) HoldUserWeapon(userId types.UserID) {
 }
 
 func (g *Game) ReleaseUserWeapon(userId types.UserID) {
-	if g.State.Phase != types.PhasePlaying {
-		return
-	}
 	player := g.GetPlayer(userId)
 	if player != nil {
 		player.Weapon.Release()
@@ -276,8 +264,8 @@ func (g Game) RoomMessage() msgs.RoomMessage {
 }
 
 func (g *Game) Update() []types.TileResult {
-	if !g.Started() {
-		return []types.TileResult{}
+	if g.State.Phase != types.PhasePlaying {
+		return nil
 	}
 
 	gameMap := &g.State.GameMap

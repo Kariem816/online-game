@@ -242,60 +242,60 @@ export default class Game {
         this.input.update();
         const network = this.network;
 
+        // Movement
+        if (this.input.isKeyPressed("KeyW")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "up",
+                start: true,
+            });
+        }
+        if (this.input.isKeyReleased("KeyW")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "up",
+                start: false,
+            });
+        }
+
+        if (this.input.isKeyPressed("KeyS")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "down",
+                start: true,
+            });
+        }
+        if (this.input.isKeyReleased("KeyS")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "down",
+                start: false,
+            });
+        }
+
+        if (this.input.isKeyPressed("KeyA")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "left",
+                start: true,
+            });
+        }
+        if (this.input.isKeyReleased("KeyA")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "left",
+                start: false,
+            });
+        }
+
+        if (this.input.isKeyPressed("KeyD")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "right",
+                start: true,
+            });
+        }
+        if (this.input.isKeyReleased("KeyD")) {
+            network.send(Messages.MSG_MOVE, {
+                direction: "right",
+                start: false,
+            });
+        }
+
         if (this.gameState.state.phase === GamePhases.Playing) {
-            // Movement
-            if (this.input.isKeyPressed("KeyW")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "up",
-                    start: true,
-                });
-            }
-            if (this.input.isKeyReleased("KeyW")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "up",
-                    start: false,
-                });
-            }
-
-            if (this.input.isKeyPressed("KeyS")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "down",
-                    start: true,
-                });
-            }
-            if (this.input.isKeyReleased("KeyS")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "down",
-                    start: false,
-                });
-            }
-
-            if (this.input.isKeyPressed("KeyA")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "left",
-                    start: true,
-                });
-            }
-            if (this.input.isKeyReleased("KeyA")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "left",
-                    start: false,
-                });
-            }
-
-            if (this.input.isKeyPressed("KeyD")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "right",
-                    start: true,
-                });
-            }
-            if (this.input.isKeyReleased("KeyD")) {
-                network.send(Messages.MSG_MOVE, {
-                    direction: "right",
-                    start: false,
-                });
-            }
-
             // Weapons
             if (this.input.isKeyReleased("Digit1")) {
                 network.send(Messages.MSG_WEAPON, {
