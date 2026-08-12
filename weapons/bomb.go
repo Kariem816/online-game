@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"online-game/consts"
+	"online-game/omath"
 	"online-game/types"
-	"online-game/types/omath"
 
 	"github.com/chewxy/math32"
 )
@@ -23,6 +23,7 @@ const BombCooldown = 3000 * time.Millisecond
 var BombRange = omath.UniformAccelerationMaxDistance(BombProjectileInitialSpeed, -BombProjectileDeceleration, BombProjectileLifetime)
 
 // Projectile parameters
+const BombProjectileRadius = 0.25       // tiles
 const BombProjectileInitialSpeed = 12.0 // square units per second
 const BombProjectileDeceleration = 0.7  // square units per second^2
 const BombProjectileLifetime = 1000 * time.Millisecond
@@ -81,7 +82,7 @@ func (b *Bomb) ToSettingsMessage() types.SettingsMessageWeapon {
 	}
 }
 
-func (p *BombProjectile) Update() []omath.IVector2 {
+func (p *BombProjectile) Update(*types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	p.Vel.Decelerate(BombProjectileDeceleration * dt)
 
@@ -93,7 +94,7 @@ func (p *BombProjectile) Update() []omath.IVector2 {
 	if p.Lifetime <= 0 {
 		cx := int32(math32.Round(p.Pos.X))
 		cy := int32(math32.Round(p.Pos.Y))
-		return []omath.IVector2{
+		return []types.TileResult{
 			{X: cx - 2, Y: cy},
 			{X: cx + 2, Y: cy},
 			{X: cx - 1, Y: cy - 1},

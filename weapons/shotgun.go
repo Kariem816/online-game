@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"online-game/consts"
+	"online-game/omath"
 	"online-game/types"
-	"online-game/types/omath"
 
 	"github.com/chewxy/math32"
 )
@@ -89,7 +89,7 @@ func (s *Shotgun) ToSettingsMessage() types.SettingsMessageWeapon {
 	}
 }
 
-func (s *ShotgunShell) Update() []omath.IVector2 {
+func (s *ShotgunShell) Update(*types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	s.Vel.Decelerate(ShotgunShellDeceleration * dt)
 
@@ -99,7 +99,7 @@ func (s *ShotgunShell) Update() []omath.IVector2 {
 	s.Lifetime -= consts.GameTick
 
 	if s.Lifetime <= 0 {
-		return []omath.IVector2{{X: int32(math32.Round(s.Pos.X)), Y: int32(math32.Round(s.Pos.Y))}}
+		return []types.TileResult{{X: int32(math32.Round(s.Pos.X)), Y: int32(math32.Round(s.Pos.Y))}}
 	}
 
 	return nil

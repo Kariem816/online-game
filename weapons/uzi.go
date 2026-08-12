@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"online-game/consts"
+	"online-game/omath"
 	"online-game/types"
-	"online-game/types/omath"
 
 	"github.com/chewxy/math32"
 )
@@ -80,7 +80,7 @@ func (u *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {
 	}
 }
 
-func (b *UziBullet) Update() []omath.IVector2 {
+func (b *UziBullet) Update(*types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	b.Vel.Decelerate(UziBulletDeceleration * dt)
 
@@ -90,7 +90,7 @@ func (b *UziBullet) Update() []omath.IVector2 {
 	b.Lifetime -= consts.GameTick
 
 	if b.Lifetime <= 0 {
-		return []omath.IVector2{{X: int32(math32.Round(b.Pos.X)), Y: int32(math32.Round(b.Pos.Y))}}
+		return []types.TileResult{{X: int32(math32.Round(b.Pos.X)), Y: int32(math32.Round(b.Pos.Y))}}
 	}
 
 	return nil

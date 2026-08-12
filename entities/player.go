@@ -2,16 +2,11 @@ package entities
 
 import (
 	"online-game/consts"
+	"online-game/omath"
 	"online-game/types"
-	"online-game/types/omath"
 	"online-game/weapons"
 
 	"github.com/chewxy/math32"
-)
-
-const (
-	TeamA types.TeamID = iota
-	TeamB types.TeamID = iota
 )
 
 type Player struct {
@@ -105,31 +100,31 @@ func (p *Player) Update(gameMap *types.GameMap) {
 	newX := p.Pos.X + float32(p.Vel.X)*consts.PlayerSpeed*float32(consts.GameTick.Seconds())
 	newY := p.Pos.Y + float32(p.Vel.Y)*consts.PlayerSpeed*float32(consts.GameTick.Seconds())
 
-	tile, bottom, right, bottomRight := GetAround(gameMap, int32(math32.Floor(newX)), int32(math32.Floor(newY)))
+	tile, bottom, right, bottomRight := gameMap.GetAround(int32(math32.Floor(newX)), int32(math32.Floor(newY)))
 	cornerX := newX-math32.Floor(newX) > 0
 	cornerY := newY-math32.Floor(newY) > 0
 
 	// Check for collisions
 	if p.Vel.X > 0 { // Moving right
-		if right == WallTile || (cornerY && bottomRight == WallTile) {
+		if right == types.TileWall || (cornerY && bottomRight == types.TileWall) {
 			newX = math32.Floor(newX)
 		}
 	}
 
 	if p.Vel.X < 0 { // Moving left
-		if tile == WallTile || (cornerY && bottom == WallTile) {
+		if tile == types.TileWall || (cornerY && bottom == types.TileWall) {
 			newX = math32.Ceil(newX)
 		}
 	}
 
 	if p.Vel.Y > 0 { // Moving down
-		if bottom == WallTile || (cornerX && bottomRight == WallTile) {
+		if bottom == types.TileWall || (cornerX && bottomRight == types.TileWall) {
 			newY = math32.Floor(newY)
 		}
 	}
 
 	if p.Vel.Y < 0 { // Moving up
-		if tile == WallTile || (cornerX && right == WallTile) {
+		if tile == types.TileWall || (cornerX && right == types.TileWall) {
 			newY = math32.Ceil(newY)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"online-game/consts"
 	"online-game/msgs"
+	"online-game/omath"
 	"online-game/types"
 	"slices"
 	"strings"
@@ -36,7 +37,7 @@ func NewGame(host *User) string {
 	}
 	room := sb.String()
 
-	player := host.ToPlayer(TeamA)
+	player := host.ToPlayer(types.TeamA)
 	game := &Game{
 		Players: Players{
 			player,
@@ -76,7 +77,7 @@ func (g *Game) AddUser(user *User) error {
 		return errors.New("game is full")
 	}
 
-	if g.State.Phase != WaitingForPlayers {
+	if g.State.Phase != types.PhaseAwaitingPlayers {
 		return errors.New("game has already started")
 	}
 	var newTeam types.TeamID
@@ -84,16 +85,16 @@ func (g *Game) AddUser(user *User) error {
 	teamA := 0
 	teamB := 0
 	for _, player := range g.Players {
-		if player.Team == TeamA {
+		if player.Team == types.TeamA {
 			teamA++
 		} else {
 			teamB++
 		}
 	}
 	if teamA > teamB {
-		newTeam = TeamB
+		newTeam = types.TeamB
 	} else {
-		newTeam = TeamA
+		newTeam = types.TeamA
 	}
 
 	player := user.ToPlayer(newTeam)
@@ -114,10 +115,10 @@ func (g *Game) RemovePlayer(userId types.UserID) {
 	if len(g.Players) == 0 {
 		g.Terminate()
 	} else if len(g.Players) < 2 {
-		g.State.Phase = WaitingForPlayers
+		g.State.Phase = types.PhaseAwaitingPlayers
 		g.State.ScoreA = 0
 		g.State.ScoreB = 0
-		Clear(&g.State.GameMap)
+		g.State.GameMap.Clear()
 		if g.Host == userId {
 			g.Host = g.Players[0].User.ID
 		}
@@ -145,10 +146,10 @@ func (g *Game) SwitchTeams(userId types.UserID) error {
 		return errors.New("player not found")
 	}
 
-	if player.Team == TeamA {
-		player.Team = TeamB
+	if player.Team == types.TeamA {
+		player.Team = types.TeamB
 	} else {
-		player.Team = TeamA
+		player.Team = types.TeamA
 	}
 	g.LC = true
 
@@ -172,7 +173,7 @@ func (g *Game) Start(userId types.UserID) error {
 	teamB := 0
 
 	for _, player := range g.Players {
-		if player.Team == TeamA {
+		if player.Team == types.TeamA {
 			teamA++
 		} else {
 			teamB++
@@ -183,15 +184,15 @@ func (g *Game) Start(userId types.UserID) error {
 		return errors.New("need at least one player on each team")
 	}
 
-	if g.State.Phase == WaitingForPlayers { // First game
-		Clear(&g.State.GameMap)
+	if g.State.Phase == types.PhaseAwaitingPlayers { // First game
+		g.State.GameMap.Clear()
 	} else {
 		g.State = *NewGameState(consts.MapWidth, consts.MapHeight)
 	}
 
 	g.BroadcastMap()
 
-	g.State.Phase = GettingReady
+	g.State.Phase = types.PhaseGetReady
 	g.StartedAt = time.Now().Add(consts.ReadyDuration)
 	g.LC = true
 
@@ -199,9 +200,9 @@ func (g *Game) Start(userId types.UserID) error {
 
 	for _, player := range g.Players {
 		for {
-			px := RandMN(0, g.State.GameMap.Width)
-			py := RandMN(0, g.State.GameMap.Height)
-			if Get(&g.State.GameMap, px, py) != WallTile {
+			px := omath.RandMN(0, g.State.GameMap.Width)
+			py := omath.RandMN(0, g.State.GameMap.Height)
+			if g.State.GameMap.Get(px, py) != types.TileWall {
 				player.Pos.X = float32(px)
 				player.Pos.Y = float32(py)
 				break
@@ -218,16 +219,16 @@ func (g *Game) Start(userId types.UserID) error {
 func (g *Game) actuallyStart() {
 	g.BroadcastSystem(msgs.SYS_MSG_INFO, fmt.Sprintf("Game starting in %d seconds...", int(consts.ReadyDuration.Seconds())))
 	time.Sleep(time.Until(g.StartedAt))
-	if g.State.Phase != GettingReady {
+	if g.State.Phase != types.PhaseGetReady {
 		return
 	}
-	g.State.Phase = Playing
+	g.State.Phase = types.PhasePlaying
 	g.BroadcastSystem(msgs.SYS_MSG_INFO, "Game started!")
 	g.LC = true
 }
 
 func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
-	if g.State.Phase != Playing {
+	if g.State.Phase != types.PhasePlaying {
 		return
 	}
 	player := g.GetPlayer(userId)
@@ -237,7 +238,7 @@ func (g *Game) MovePlayer(userId types.UserID, direction string, start bool) {
 }
 
 func (g *Game) HoldUserWeapon(userId types.UserID) {
-	if g.State.Phase != Playing {
+	if g.State.Phase != types.PhasePlaying {
 		return
 	}
 	player := g.GetPlayer(userId)
@@ -247,7 +248,7 @@ func (g *Game) HoldUserWeapon(userId types.UserID) {
 }
 
 func (g *Game) ReleaseUserWeapon(userId types.UserID) {
-	if g.State.Phase != Playing {
+	if g.State.Phase != types.PhasePlaying {
 		return
 	}
 	player := g.GetPlayer(userId)
@@ -274,59 +275,67 @@ func (g Game) RoomMessage() msgs.RoomMessage {
 	}
 }
 
-func (g *Game) Update() []types.CellResult {
+func (g *Game) Update() []types.TileResult {
 	if !g.Started() {
-		return []types.CellResult{}
+		return []types.TileResult{}
 	}
 
-	gameMap := g.State.GameMap
+	gameMap := &g.State.GameMap
 
 	currentProjectiles := append([]types.Projectile(nil), g.Projectiles...)
 	g.Projectiles = g.Projectiles[:0]
 
-	cells := make([]types.CellResult, 0)
+	cells := make([]types.TileResult, 0)
 	for _, projectile := range currentProjectiles {
-		attacked := projectile.Update()
+		attacked := projectile.Update(gameMap)
 		if projectile.IsAlive() {
 			g.Projectiles = append(g.Projectiles, projectile)
 		}
 
 		cells = slices.Grow(cells, len(attacked))
 		for _, tile := range attacked {
-			x, y := tile.X, tile.Y
-			tile := Get(&g.State.GameMap, x, y)
-			if tile == WallTile {
+			if tile.X < 0 || tile.X >= g.State.GameMap.Width || tile.Y < 0 || tile.Y >= g.State.GameMap.Height {
+				continue
+			}
+			x := tile.X
+			y := tile.Y
+			oldTile := g.State.GameMap.Get(x, y)
+			if oldTile == types.TileWall {
 				continue
 			}
 
-			switch tile {
-			case TeamATile:
+			// newTile := tile.Tile
+			// if oldTile == newTile {
+			// 	continue
+			// }
+
+			switch oldTile {
+			case types.TileTeamA:
 				g.State.ScoreA--
-			case TeamBTile:
+			case types.TileTeamB:
 				g.State.ScoreB--
 			}
-
 			var newTile types.Tile
 			switch projectile.Team() {
-			case TeamA:
-				newTile = TeamATile
+			case types.TeamA:
 				g.State.ScoreA++
-			case TeamB:
-				newTile = TeamBTile
+				newTile = types.TileTeamA
+			case types.TeamB:
 				g.State.ScoreB++
+				newTile = types.TileTeamB
 			}
-			Set(&g.State.GameMap, x, y, newTile)
+			g.State.GameMap.Set(x, y, newTile)
 
-			cells = append(cells, types.CellResult{
-				X:     x,
-				Y:     y,
-				State: newTile,
+			cells = append(cells, types.TileResult{
+				X:    x,
+				Y:    y,
+				Tile: newTile,
 			})
 		}
 	}
 
 	for _, player := range g.Players {
-		player.Update(&gameMap)
+		player.Update(gameMap)
 		g.Projectiles = append(g.Projectiles, player.Weapon.Update()...)
 	}
 
@@ -338,7 +347,7 @@ func (g *Game) Update() []types.CellResult {
 }
 
 func (g *Game) Finish() {
-	g.State.Phase = GameOver
+	g.State.Phase = types.PhaseGameOver
 	for _, player := range g.Players {
 		player.Reset()
 	}
@@ -419,5 +428,5 @@ PlayerLoop:
 }
 
 func (g *Game) Started() bool {
-	return g.State.Phase == GettingReady || g.State.Phase == Playing
+	return g.State.Phase == types.PhaseGetReady || g.State.Phase == types.PhasePlaying
 }

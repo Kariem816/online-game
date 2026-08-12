@@ -37,7 +37,7 @@ func UpdateState() {
 
 func BroadcastState() {
 	for _, game := range entities.Games {
-		if !game.Started() && !game.LC {
+		if !(game.Started() || game.LC) {
 			continue
 		}
 		game.BroadcastState()
@@ -47,7 +47,7 @@ func BroadcastState() {
 
 func BroadcastMap() {
 	for _, game := range entities.Games {
-		if game.State.Phase != entities.Playing {
+		if game.State.Phase != types.PhasePlaying {
 			continue
 		}
 
@@ -55,7 +55,7 @@ func BroadcastMap() {
 	}
 }
 
-func updateMap(game *entities.Game, cells []types.CellResult) {
+func updateMap(game *entities.Game, cells []types.TileResult) {
 	msg := msgs.ShotMessage{
 		Cells: cells,
 	}

@@ -5,19 +5,23 @@ import (
 	"encoding/binary"
 	"time"
 
+	"online-game/omath"
 	"online-game/types"
-	"online-game/types/omath"
 )
 
 type Weapon interface {
 	ID() types.WeaponID
 	Name() string
+
 	Update() []types.Projectile
+
 	Cooldown() time.Duration
 	CooldownLeft() time.Duration
+
 	IsHeld() bool
 	Hold()
 	Release()
+
 	Aim(pos omath.Vector2, r float32, theta float32)
 
 	ToSettingsMessage() types.SettingsMessageWeapon

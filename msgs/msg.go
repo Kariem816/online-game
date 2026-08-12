@@ -64,7 +64,7 @@ type MouseMoveMessage struct {
 	DY int32
 }
 type ShotMessage struct {
-	Cells []types.CellResult
+	Cells []types.TileResult
 }
 
 type ChatMessage struct {
@@ -357,7 +357,7 @@ func (sm ShotMessage) Buffer() (*bytes.Buffer, bool) {
 	for _, c := range sm.Cells {
 		binary.Write(buf, binary.LittleEndian, c.X)
 		binary.Write(buf, binary.LittleEndian, c.Y)
-		buf.WriteByte(byte(c.State))
+		buf.WriteByte(byte(c.Tile))
 	}
 
 	return buf, true

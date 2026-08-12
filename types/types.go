@@ -1,23 +1,8 @@
 package types
 
 import (
-	"online-game/types/omath"
+	"online-game/omath"
 )
-
-type UserID int16
-
-type Tile uint8
-type GamePhase uint8
-
-type TeamID uint8
-
-type WeaponID uint8
-
-type GameMap struct {
-	Width  int32
-	Height int32
-	Tiles  []Tile
-}
 
 type NetworkTime struct {
 	Sec   int32
@@ -53,10 +38,10 @@ type RoomMessagePlayer struct {
 	Username string
 }
 
-type CellResult struct {
-	X     int32
-	Y     int32
-	State Tile
+type TileResult struct {
+	X    int32
+	Y    int32
+	Tile Tile
 }
 
 type SettingsMessageWeapon struct {
