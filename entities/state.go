@@ -13,12 +13,6 @@ func NewGameState(width, height int32) *types.GameState {
 		Tiles:  make([]types.Tile, height*width),
 	}
 
-	// Fill the map with empty tiles
-	for i := range gameMap.Tiles {
-		gameMap.Tiles[i] = types.TileEmpty
-	}
-
-	// walls
 	gameMap.GenerateWalls(consts.MAP_DIVISIONS)
 
 	return &types.GameState{
