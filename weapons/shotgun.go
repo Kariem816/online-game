@@ -89,7 +89,7 @@ func (s *Shotgun) ToSettingsMessage() types.SettingsMessageWeapon {
 	}
 }
 
-func (s *ShotgunShell) Update(*types.GameMap) []types.TileResult {
+func (s *ShotgunShell) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	s.Vel.Decelerate(ShotgunShellDeceleration * dt)
 
@@ -99,7 +99,13 @@ func (s *ShotgunShell) Update(*types.GameMap) []types.TileResult {
 	s.Lifetime -= consts.GameTick
 
 	if s.Lifetime <= 0 {
-		return []types.TileResult{{X: int32(math32.Round(s.Pos.X)), Y: int32(math32.Round(s.Pos.Y))}}
+		cx := int32(math32.Round(s.Pos.X))
+		cy := int32(math32.Round(s.Pos.Y))
+		if gameMap.Get(cx, cy) != types.TileWall {
+			return []types.TileResult{
+				{Tile: s.TeamID.ToTile(), X: cx, Y: cy},
+			}
+		}
 	}
 
 	return nil

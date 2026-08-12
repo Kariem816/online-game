@@ -288,14 +288,10 @@ func (g *Game) Update() []types.TileResult {
 			x := tile.X
 			y := tile.Y
 			oldTile := g.State.GameMap.Get(x, y)
-			if oldTile == types.TileWall {
+			newTile := tile.Tile
+			if oldTile == newTile {
 				continue
 			}
-
-			// newTile := tile.Tile
-			// if oldTile == newTile {
-			// 	continue
-			// }
 
 			switch oldTile {
 			case types.TileTeamA:
@@ -303,22 +299,16 @@ func (g *Game) Update() []types.TileResult {
 			case types.TileTeamB:
 				g.State.ScoreB--
 			}
-			var newTile types.Tile
-			switch projectile.Team() {
-			case types.TeamA:
+
+			switch newTile {
+			case types.TileTeamA:
 				g.State.ScoreA++
-				newTile = types.TileTeamA
-			case types.TeamB:
+			case types.TileTeamB:
 				g.State.ScoreB++
-				newTile = types.TileTeamB
 			}
 			g.State.GameMap.Set(x, y, newTile)
 
-			cells = append(cells, types.TileResult{
-				X:    x,
-				Y:    y,
-				Tile: newTile,
-			})
+			cells = append(cells, tile)
 		}
 	}
 

@@ -80,7 +80,7 @@ func (u *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {
 	}
 }
 
-func (b *UziBullet) Update(*types.GameMap) []types.TileResult {
+func (b *UziBullet) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	b.Vel.Decelerate(UziBulletDeceleration * dt)
 
@@ -90,7 +90,13 @@ func (b *UziBullet) Update(*types.GameMap) []types.TileResult {
 	b.Lifetime -= consts.GameTick
 
 	if b.Lifetime <= 0 {
-		return []types.TileResult{{X: int32(math32.Round(b.Pos.X)), Y: int32(math32.Round(b.Pos.Y))}}
+		cx := int32(math32.Round(b.Pos.X))
+		cy := int32(math32.Round(b.Pos.Y))
+		if gameMap.Get(cx, cy) != types.TileWall {
+			return []types.TileResult{
+				{Tile: b.TeamID.ToTile(), X: cx, Y: cy},
+			}
+		}
 	}
 
 	return nil

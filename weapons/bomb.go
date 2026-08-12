@@ -82,7 +82,7 @@ func (b *Bomb) ToSettingsMessage() types.SettingsMessageWeapon {
 	}
 }
 
-func (p *BombProjectile) Update(*types.GameMap) []types.TileResult {
+func (p *BombProjectile) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	p.Vel.Decelerate(BombProjectileDeceleration * dt)
 
@@ -94,16 +94,20 @@ func (p *BombProjectile) Update(*types.GameMap) []types.TileResult {
 	if p.Lifetime <= 0 {
 		cx := int32(math32.Round(p.Pos.X))
 		cy := int32(math32.Round(p.Pos.Y))
-		return []types.TileResult{
-			{X: cx - 2, Y: cy},
-			{X: cx + 2, Y: cy},
-			{X: cx - 1, Y: cy - 1},
-			{X: cx - 1, Y: cy + 1},
-			{X: cx + 1, Y: cy - 1},
-			{X: cx + 1, Y: cy + 1},
-			{X: cx, Y: cy - 2},
-			{X: cx, Y: cy + 2},
+		tiles := make([]types.TileResult, 0, 8)
+		for dx := int32(-2); dx <= 2; dx++ {
+			for dy := int32(-2); dy <= 2; dy++ {
+				dist := dx*dx + dy*dy
+				if dist < 2 || 4 < dist {
+					continue
+				}
+				if gameMap.Get(cx+dx, cy+dy) == types.TileWall {
+					continue
+				}
+				tiles = append(tiles, types.TileResult{Tile: p.TeamID.ToTile(), X: cx + dx, Y: cy + dy})
+			}
 		}
+		return tiles
 	}
 
 	return nil
