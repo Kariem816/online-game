@@ -29,6 +29,8 @@ var ShotgunRange = omath.UniformAccelerationMaxDistance(ShotgunShellInitialSpeed
 const ShotgunShellInitialSpeed = 20.0 // square units per second
 const ShotgunShellDeceleration = 1.5  // square units per second^2
 const ShotgunShellLifetime = 250 * time.Millisecond
+const ShotgunShellRadius = 0.2 // tiles
+const ShotgunShellDestructionThreshold = 0.99
 
 func NewShotgun(team types.TeamID) *Shotgun {
 	return &Shotgun{
@@ -93,15 +95,41 @@ func (s *ShotgunShell) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	s.Vel.Decelerate(ShotgunShellDeceleration * dt)
 
-	s.Pos.X += s.Vel.X * dt
-	s.Pos.Y += s.Vel.Y * dt
+	newX := s.Pos.X + s.Vel.X*dt
+	newY := s.Pos.Y + s.Vel.Y*dt
+	vp := s.Vel.Polar()
+	wallDestroyed := false
+
+	if gameMap.HasWall(newX-ShotgunShellRadius, s.Pos.Y) || gameMap.HasWall(newX+ShotgunShellRadius, s.Pos.Y) {
+		if vp.R > ShotgunShellDestructionThreshold*ShotgunShellInitialSpeed {
+			wallDestroyed = true
+			s.Lifetime = 0
+			s.Pos.X = newX
+		} else {
+			s.Vel.X *= -1
+		}
+	} else {
+		s.Pos.X = newX
+	}
+
+	if gameMap.HasWall(s.Pos.X, newY-ShotgunShellRadius) || gameMap.HasWall(s.Pos.X, newY+ShotgunShellRadius) {
+		if vp.R > ShotgunShellDestructionThreshold*ShotgunShellInitialSpeed {
+			wallDestroyed = true
+			s.Lifetime = 0
+			s.Pos.Y = newY
+		} else {
+			s.Vel.Y *= -1
+		}
+	} else {
+		s.Pos.Y = newY
+	}
 
 	s.Lifetime -= consts.GameTick
 
 	if s.Lifetime <= 0 {
 		cx := int32(math32.Floor(s.Pos.X))
 		cy := int32(math32.Floor(s.Pos.Y))
-		if gameMap.Get(cx, cy) != types.TileWall {
+		if gameMap.Get(cx, cy) != types.TileWall || wallDestroyed {
 			return []types.TileResult{
 				{Tile: s.TeamID.ToTile(), X: cx, Y: cy},
 			}
