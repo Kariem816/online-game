@@ -13,20 +13,26 @@ import (
 
 type Bomb struct {
 	BaseWeapon
+	prevHeld bool
+	lastHold time.Time
 }
 
 type BombProjectile BaseProjectile
 
 // Weapon parameters
-const BombCooldown = 3000 * time.Millisecond
+const BombCooldown = 1000 * time.Millisecond
 
-var BombRange = omath.UniformAccelerationMaxDistance(BombProjectileInitialSpeed, -BombProjectileDeceleration, BombProjectileLifetime)
+var BombRange = omath.UniformAccelerationMaxDistance(BombProjectileMaxInitialSpeed, -BombProjectileDeceleration, BombProjectileLifetime)
 
 // Projectile parameters
-const BombProjectileRadius = 0.25       // tiles
-const BombProjectileInitialSpeed = 12.0 // square units per second
-const BombProjectileDeceleration = 0.7  // square units per second^2
+const BombProjectileRadius = 0.25          // tiles
+const BombProjectileMaxInitialSpeed = 15.0 // square units per second
+const BombProjectileDeceleration = 0.7     // square units per second^2
 const BombProjectileLifetime = 1000 * time.Millisecond
+const BombExplosionRadius = 0.3 // tiles
+const BombProjectileCollisionLoss = 0.5
+const BombProjectileMinHoldTime = 1000 * time.Millisecond
+const BombProjectileMaxHoldTime = 3000 * time.Millisecond
 
 func NewBomb(team types.TeamID) *Bomb {
 	return &Bomb{
@@ -43,6 +49,11 @@ func (b *Bomb) Name() string {
 	return "Bomb"
 }
 
+func (b *Bomb) Hold() {
+	b.held = true
+	b.lastHold = time.Now()
+}
+
 func (b *Bomb) Update() []types.Projectile {
 	if b.cooldown > 0 {
 		b.cooldown -= consts.GameTick
@@ -50,11 +61,22 @@ func (b *Bomb) Update() []types.Projectile {
 	if b.cooldown < 0 {
 		b.cooldown = 0
 	}
+	defer func() {
+		b.prevHeld = b.held
+	}()
 
-	if b.cooldown == 0 && b.held {
+	if !b.held && b.prevHeld && b.cooldown == 0 {
+		holdTime := time.Since(b.lastHold).Seconds()
+		if holdTime > BombProjectileMaxHoldTime.Seconds() {
+			holdTime = BombProjectileMaxHoldTime.Seconds()
+		} else if holdTime < BombProjectileMinHoldTime.Seconds() {
+			holdTime = BombProjectileMinHoldTime.Seconds()
+		}
+
+		vi := BombProjectileMaxInitialSpeed * float32(holdTime) / float32(BombProjectileMaxHoldTime.Seconds())
 		projectile := BombProjectile{
 			Pos:      omath.Vector2{X: b.pos.X + 0.5, Y: b.pos.Y + 0.5},
-			Vel:      omath.Polar{R: BombProjectileInitialSpeed, Theta: b.theta}.Vector2(),
+			Vel:      omath.Polar{R: vi, Theta: b.theta}.Vector2(),
 			TeamID:   b.teamId,
 			Lifetime: BombProjectileLifetime,
 		}
@@ -86,8 +108,20 @@ func (p *BombProjectile) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	p.Vel.Decelerate(BombProjectileDeceleration * dt)
 
-	p.Pos.X += p.Vel.X * dt
-	p.Pos.Y += p.Vel.Y * dt
+	newX := p.Pos.X + p.Vel.X*dt
+	newY := p.Pos.Y + p.Vel.Y*dt
+
+	if gameMap.HasWall(newX-BombProjectileRadius, p.Pos.Y) || gameMap.HasWall(newX+BombProjectileRadius, p.Pos.Y) {
+		p.Vel.X *= -1 * (1 - BombProjectileCollisionLoss)
+	} else {
+		p.Pos.X = newX
+	}
+
+	if gameMap.HasWall(p.Pos.X, newY-BombProjectileRadius) || gameMap.HasWall(p.Pos.X, newY+BombProjectileRadius) {
+		p.Vel.Y *= -1 * (1 - BombProjectileCollisionLoss)
+	} else {
+		p.Pos.Y = newY
+	}
 
 	p.Lifetime -= consts.GameTick
 
@@ -99,9 +133,9 @@ func (p *BombProjectile) Update(gameMap *types.GameMap) []types.TileResult {
 			for dy := int32(-2); dy <= 2; dy++ {
 				dist := dx*dx + dy*dy
 				if dist < 2 || 4 < dist {
-					continue
-				}
-				if gameMap.Get(cx+dx, cy+dy) == types.TileWall {
+					if dist < 2 && gameMap.Get(cx+dx, cy+dy) == types.TileWall {
+						tiles = append(tiles, types.TileResult{X: cx + dx, Y: cy + dy}) // empty tile
+					}
 					continue
 				}
 				tiles = append(tiles, types.TileResult{Tile: p.TeamID.ToTile(), X: cx + dx, Y: cy + dy})
