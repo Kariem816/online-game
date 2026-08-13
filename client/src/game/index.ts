@@ -634,7 +634,7 @@ export default class Game {
                 const color = theme.colors[projectile.team === Team.TeamA ? "teamA" : "teamB"];
 
                 this.ctx.beginPath();
-                this.ctx.arc((x + 0.5) * cellWidth, (y + 0.5) * cellHeight, 0.2 * cellWidth, 0, 2 * Math.PI);
+                this.ctx.arc(x * cellWidth, y * cellHeight, 0.2 * cellWidth, 0, 2 * Math.PI);
                 this.ctx.fillStyle = color;
                 this.ctx.fill();
             }

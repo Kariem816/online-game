@@ -210,6 +210,8 @@ func (g *Game) Start(userId types.UserID) error {
 		}
 	}
 
+	g.Projectiles = g.Projectiles[:0]
+
 	return nil
 }
 

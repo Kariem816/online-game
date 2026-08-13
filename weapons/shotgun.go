@@ -59,7 +59,7 @@ func (s *Shotgun) Update() []types.Projectile {
 		for i := range ShotgunShellCount {
 			theta := s.theta - math32.Pi*s.spread*(float32(i-ShotgunShellCount/2)/4)
 			shell := ShotgunShell{
-				Pos:      s.pos,
+				Pos:      omath.Vector2{X: s.pos.X + 0.5, Y: s.pos.Y + 0.5},
 				Vel:      omath.Polar{R: ShotgunShellInitialSpeed, Theta: theta}.Vector2(),
 				TeamID:   s.teamId,
 				Lifetime: ShotgunShellLifetime,
@@ -99,8 +99,8 @@ func (s *ShotgunShell) Update(gameMap *types.GameMap) []types.TileResult {
 	s.Lifetime -= consts.GameTick
 
 	if s.Lifetime <= 0 {
-		cx := int32(math32.Round(s.Pos.X))
-		cy := int32(math32.Round(s.Pos.Y))
+		cx := int32(math32.Floor(s.Pos.X))
+		cy := int32(math32.Floor(s.Pos.Y))
 		if gameMap.Get(cx, cy) != types.TileWall {
 			return []types.TileResult{
 				{Tile: s.TeamID.ToTile(), X: cx, Y: cy},

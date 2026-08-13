@@ -26,6 +26,7 @@ var UziRange = omath.UniformAccelerationMaxDistance(UziBulletInitialSpeed, -UziB
 const UziBulletInitialSpeed = 20.0 // square units per second
 const UziBulletDeceleration = 0.0  // square units per second^2
 const UziBulletLifetime = 666 * time.Millisecond
+const UziBulletRadius = 0.2 // tiles
 
 func NewUzi(team types.TeamID) *Uzi {
 	return &Uzi{
@@ -52,7 +53,7 @@ func (u *Uzi) Update() []types.Projectile {
 
 	if u.held && u.cooldown == 0 {
 		projectile := UziBullet{
-			Pos:      u.pos,
+			Pos:      omath.Vector2{X: u.pos.X + 0.5, Y: u.pos.Y + 0.5},
 			Vel:      omath.Polar{R: UziBulletInitialSpeed, Theta: u.theta}.Vector2(),
 			TeamID:   u.teamId,
 			Lifetime: UziBulletLifetime,
@@ -84,14 +85,26 @@ func (b *UziBullet) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
 	b.Vel.Decelerate(UziBulletDeceleration * dt)
 
-	b.Pos.X += b.Vel.X * dt
-	b.Pos.Y += b.Vel.Y * dt
+	newX := b.Pos.X + b.Vel.X*dt
+	newY := b.Pos.Y + b.Vel.Y*dt
+
+	if gameMap.HasWall(newX-UziBulletRadius, b.Pos.Y) || gameMap.HasWall(newX+UziBulletRadius, b.Pos.Y) {
+		b.Vel.X *= -1
+	} else {
+		b.Pos.X = newX
+	}
+
+	if gameMap.HasWall(b.Pos.X, newY-UziBulletRadius) || gameMap.HasWall(b.Pos.X, newY+UziBulletRadius) {
+		b.Vel.Y *= -1
+	} else {
+		b.Pos.Y = newY
+	}
 
 	b.Lifetime -= consts.GameTick
 
 	if b.Lifetime <= 0 {
-		cx := int32(math32.Round(b.Pos.X))
-		cy := int32(math32.Round(b.Pos.Y))
+		cx := int32(math32.Floor(b.Pos.X))
+		cy := int32(math32.Floor(b.Pos.Y))
 		if gameMap.Get(cx, cy) != types.TileWall {
 			return []types.TileResult{
 				{Tile: b.TeamID.ToTile(), X: cx, Y: cy},

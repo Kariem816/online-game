@@ -3,6 +3,8 @@ package types
 import (
 	"online-game/consts"
 	"online-game/omath"
+
+	"github.com/chewxy/math32"
 )
 
 type GameMap struct {
@@ -25,6 +27,13 @@ func (m *GameMap) GetAround(x0, y0, x1, y1 int32) (topLeft, topRight, bottomLeft
 	bottomLeft = m.Get(x0, y1)
 	bottomRight = m.Get(x1, y1)
 	return
+}
+
+func (m *GameMap) HasWall(x, y float32) bool {
+	xInt := int32(math32.Floor(x))
+	yInt := int32(math32.Floor(y))
+
+	return m.Get(xInt, yInt) == TileWall
 }
 
 func (m *GameMap) Set(x, y int32, tile Tile) {

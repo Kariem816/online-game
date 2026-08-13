@@ -52,7 +52,7 @@ func (l *RocketLauncher) Update() []types.Projectile {
 
 	if l.held && l.cooldown == 0 {
 		projectile := Rocket{
-			Pos:      l.pos,
+			Pos:      omath.Vector2{X: l.pos.X + 0.5, Y: l.pos.Y + 0.5},
 			Vel:      omath.Polar{R: RocketLauncherProjectileInitialSpeed, Theta: l.theta}.Vector2(),
 			TeamID:   l.teamId,
 			Lifetime: RocketLauncherProjectileLifetime,
@@ -90,8 +90,8 @@ func (r *Rocket) Update(gameMap *types.GameMap) []types.TileResult {
 	r.Lifetime -= consts.GameTick
 
 	if r.Lifetime <= 0 {
-		cx := int32(math32.Round(r.Pos.X))
-		cy := int32(math32.Round(r.Pos.Y))
+		cx := int32(math32.Floor(r.Pos.X))
+		cy := int32(math32.Floor(r.Pos.Y))
 		tiles := make([]types.TileResult, 0, 9)
 		for dx := int32(-1); dx <= 1; dx++ {
 			for dy := int32(-1); dy <= 1; dy++ {

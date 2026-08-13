@@ -53,7 +53,7 @@ func (b *Bomb) Update() []types.Projectile {
 
 	if b.cooldown == 0 && b.held {
 		projectile := BombProjectile{
-			Pos:      b.pos,
+			Pos:      omath.Vector2{X: b.pos.X + 0.5, Y: b.pos.Y + 0.5},
 			Vel:      omath.Polar{R: BombProjectileInitialSpeed, Theta: b.theta}.Vector2(),
 			TeamID:   b.teamId,
 			Lifetime: BombProjectileLifetime,
@@ -92,8 +92,8 @@ func (p *BombProjectile) Update(gameMap *types.GameMap) []types.TileResult {
 	p.Lifetime -= consts.GameTick
 
 	if p.Lifetime <= 0 {
-		cx := int32(math32.Round(p.Pos.X))
-		cy := int32(math32.Round(p.Pos.Y))
+		cx := int32(math32.Floor(p.Pos.X))
+		cy := int32(math32.Floor(p.Pos.Y))
 		tiles := make([]types.TileResult, 0, 8)
 		for dx := int32(-2); dx <= 2; dx++ {
 			for dy := int32(-2); dy <= 2; dy++ {

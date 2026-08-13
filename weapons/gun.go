@@ -51,7 +51,7 @@ func (g *Gun) Update() []types.Projectile {
 
 	if g.held && g.cooldown == 0 {
 		bullet := GunBullet{
-			Pos:      g.pos,
+			Pos:      omath.Vector2{X: g.pos.X + 0.5, Y: g.pos.Y + 0.5},
 			Vel:      omath.Polar{R: GunBulletInitialSpeed, Theta: g.theta}.Vector2(),
 			TeamID:   g.teamId,
 			Lifetime: GunBulletLifetime,
@@ -89,8 +89,8 @@ func (b *GunBullet) Update(gameMap *types.GameMap) []types.TileResult {
 	b.Lifetime -= consts.GameTick
 
 	if b.Lifetime <= 0 {
-		cx := int32(math32.Round(b.Pos.X))
-		cy := int32(math32.Round(b.Pos.Y))
+		cx := int32(math32.Floor(b.Pos.X))
+		cy := int32(math32.Floor(b.Pos.Y))
 		if gameMap.Get(cx, cy) != types.TileWall {
 			return []types.TileResult{
 				{Tile: b.TeamID.ToTile(), X: cx, Y: cy},
