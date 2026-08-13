@@ -12,6 +12,7 @@ import (
 type Weapon interface {
 	ID() types.WeaponID
 	Name() string
+	SetTeam(team types.TeamID)
 
 	Update() []types.Projectile
 
@@ -46,6 +47,10 @@ type BaseProjectile struct {
 
 func (w *BaseWeapon) ID() types.WeaponID {
 	return w.id
+}
+
+func (w *BaseWeapon) SetTeam(team types.TeamID) {
+	w.teamId = team
 }
 
 func (w *BaseWeapon) CooldownLeft() time.Duration {

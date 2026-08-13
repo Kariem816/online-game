@@ -148,8 +148,10 @@ func (g *Game) SwitchTeams(userId types.UserID) error {
 
 	if player.Team == types.TeamA {
 		player.Team = types.TeamB
+		player.Weapon.SetTeam(types.TeamB)
 	} else {
 		player.Team = types.TeamA
+		player.Weapon.SetTeam(types.TeamA)
 	}
 	g.LC = true
 
