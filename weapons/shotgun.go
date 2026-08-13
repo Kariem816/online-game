@@ -112,7 +112,7 @@ func (s *ShotgunShell) Update(gameMap *types.GameMap) []types.TileResult {
 }
 
 func (s *ShotgunShell) IsAlive() bool {
-	return s.Lifetime > 0
+	return s.Lifetime > 0 && (s.Pos.X >= 0 && s.Pos.Y >= 0 && s.Pos.X < float32(consts.MapWidth) && s.Pos.Y < float32(consts.MapHeight))
 }
 
 func (s *ShotgunShell) Team() types.TeamID {

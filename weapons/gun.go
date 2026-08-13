@@ -101,7 +101,7 @@ func (b *GunBullet) Update(gameMap *types.GameMap) []types.TileResult {
 }
 
 func (b *GunBullet) IsAlive() bool {
-	return b.Lifetime > 0
+	return b.Lifetime > 0 && (b.Pos.X >= 0 && b.Pos.Y >= 0 && b.Pos.X < float32(consts.MapWidth) && b.Pos.Y < float32(consts.MapHeight))
 }
 
 func (b *GunBullet) Team() types.TeamID {

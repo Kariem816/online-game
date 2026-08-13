@@ -108,7 +108,7 @@ func (r *Rocket) Update(gameMap *types.GameMap) []types.TileResult {
 }
 
 func (r *Rocket) IsAlive() bool {
-	return r.Lifetime > 0
+	return r.Lifetime > 0 && (r.Pos.X >= 0 && r.Pos.Y >= 0 && r.Pos.X < float32(consts.MapWidth) && r.Pos.Y < float32(consts.MapHeight))
 }
 
 func (r *Rocket) Team() types.TeamID {

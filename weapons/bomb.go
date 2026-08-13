@@ -114,7 +114,7 @@ func (p *BombProjectile) Update(gameMap *types.GameMap) []types.TileResult {
 }
 
 func (p *BombProjectile) IsAlive() bool {
-	return p.Lifetime > 0
+	return p.Lifetime > 0 && (p.Pos.X >= 0 && p.Pos.Y >= 0 && p.Pos.X < float32(consts.MapWidth) && p.Pos.Y < float32(consts.MapHeight))
 }
 
 func (p *BombProjectile) Team() types.TeamID {
