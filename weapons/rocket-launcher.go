@@ -26,6 +26,7 @@ var RocketLauncherRange = omath.UniformAccelerationMaxDistance(RocketLauncherPro
 const RocketLauncherProjectileInitialSpeed = 25.0 // square units per second
 const RocketLauncherProjectileDeceleration = 1.0  // square units per second^2
 const RocketLauncherProjectileLifetime = 750 * time.Millisecond
+const RocketLauncherProjectileRadius = 0.25 // tiles
 
 func NewRocketLauncher(team types.TeamID) *RocketLauncher {
 	return &RocketLauncher{
@@ -86,8 +87,13 @@ func (r *Rocket) Update(gameMap *types.GameMap) []types.TileResult {
 
 	r.Pos.X += r.Vel.X * dt
 	r.Pos.Y += r.Vel.Y * dt
-
-	r.Lifetime -= consts.GameTick
+	hasHitWall := false
+	if gameMap.HasWall(r.Pos.X-RocketLauncherProjectileRadius, r.Pos.Y-RocketLauncherProjectileRadius) || gameMap.HasWall(r.Pos.X+RocketLauncherProjectileRadius, r.Pos.Y+RocketLauncherProjectileRadius) {
+		hasHitWall = true
+		r.Lifetime = 0
+	} else {
+		r.Lifetime -= consts.GameTick
+	}
 
 	if r.Lifetime <= 0 {
 		cx := int32(math32.Floor(r.Pos.X))
@@ -95,7 +101,7 @@ func (r *Rocket) Update(gameMap *types.GameMap) []types.TileResult {
 		tiles := make([]types.TileResult, 0, 9)
 		for dx := int32(-1); dx <= 1; dx++ {
 			for dy := int32(-1); dy <= 1; dy++ {
-				if gameMap.Get(cx+dx, cy+dy) == types.TileWall {
+				if !hasHitWall && gameMap.Get(cx+dx, cy+dy) == types.TileWall {
 					continue
 				}
 				tiles = append(tiles, types.TileResult{Tile: r.TeamID.ToTile(), X: cx + dx, Y: cy + dy})
