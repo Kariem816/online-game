@@ -77,7 +77,7 @@ func (g *Game) AddUser(user *User) error {
 		return errors.New("game is full")
 	}
 
-	if g.State.Phase != types.PhaseAwaitingPlayers {
+	if g.Started() {
 		return errors.New("game has already started")
 	}
 	var newTeam types.TeamID
