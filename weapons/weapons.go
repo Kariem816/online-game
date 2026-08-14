@@ -18,6 +18,7 @@ type Weapon interface {
 
 	Cooldown() time.Duration
 	CooldownLeft() time.Duration
+	ResetCooldown() error
 
 	IsHeld() bool
 	Hold()
@@ -56,6 +57,11 @@ func (w *BaseWeapon) SetTeam(team types.TeamID) {
 
 func (w *BaseWeapon) CooldownLeft() time.Duration {
 	return w.cooldown
+}
+
+func (w *BaseWeapon) ResetCooldown() error {
+	w.cooldown = 0
+	return nil
 }
 
 func (w *BaseWeapon) IsHeld() bool {

@@ -322,16 +322,16 @@ export default class Game {
                     weapon: TWeapon.WEAPON_BOMB,
                 });
             }
-
-            // Shooting
-            if (this.input.isMousePressed(Mouse.Left)) {
-                network.send(Messages.MSG_MOUSEPRESS);
-            }
-            if (this.input.isMouseReleased(Mouse.Left)) {
-                network.send(Messages.MSG_MOUSERELEASE);
-            }
         }
 
+        // Shooting
+        if (this.input.isMousePressed(Mouse.Left)) {
+            network.send(Messages.MSG_MOUSEPRESS);
+        }
+        if (this.input.isMouseReleased(Mouse.Left)) {
+            network.send(Messages.MSG_MOUSERELEASE);
+        }
+        
         if (this.gameState.state.phase === GamePhases.GettingReady || this.gameState.state.phase === GamePhases.Playing) {
             // Aiming
             const gameCoords = this.canvasToGameCoords(this.input.getMousePosition());

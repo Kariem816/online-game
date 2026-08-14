@@ -210,6 +210,7 @@ func (g *Game) Start(userId types.UserID) error {
 				break
 			}
 		}
+		player.Weapon.ResetCooldown()
 	}
 
 	clear(g.Projectiles)
