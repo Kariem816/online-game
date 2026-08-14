@@ -3,12 +3,29 @@ import type { Point, Size, Rect } from "./geometry"
 
 type TWeapons = {
     [key in TWeapon]: {
-        draw: (ctx: CanvasRenderingContext2D, cellSize: Size, player: { pos: Point, theta: number }, color: string) => void
+        draw: (ctx: CanvasRenderingContext2D, cellSize: Size, player: { pos: Point, theta: number }, colors: string) => void
         drawIcon: (ctx: CanvasRenderingContext2D, rect: Rect, colors: [string, string]) => void
     };
 }
 
-// @ts-expect-error TS6133
+export function drawWeapon(wid: TWeapon, ctx: CanvasRenderingContext2D, cellSize: Size, player: { pos: Point, theta: number }, color: string) {
+    const weapon = drawFns[wid];
+    if (weapon) {
+        weapon.draw(ctx, cellSize, player, color);
+    } else {
+        drawUnknown(ctx, cellSize, player, color);
+    }
+}
+
+export function drawWeaponIcon(wid: TWeapon, ctx: CanvasRenderingContext2D, rect: Rect, colors: [string, string]) {
+    const weapon = drawFns[wid];
+    if (weapon) {
+        weapon.drawIcon(ctx, rect, colors);
+    } else {
+        drawIconUnknown(ctx, rect, colors);
+    }
+}
+
 function drawUnknown(ctx: CanvasRenderingContext2D, cellSize: Size, player: { pos: Point, theta: number }, color: string) {
     const spx = player.pos.x;
     const spy = player.pos.y;
@@ -22,7 +39,6 @@ function drawUnknown(ctx: CanvasRenderingContext2D, cellSize: Size, player: { po
     ctx.fillText("?", epx, epy);
 }
 
-// @ts-expect-error TS6133
 function drawIconUnknown(ctx: CanvasRenderingContext2D, { x, y, w, h }: Rect, [color1, color2]: [string, string]) {
     ctx.save();
 
@@ -91,7 +107,7 @@ function createDrawIconFn(width: number, height: number, path: string): TWeapons
     };
 }
 
-export const Weapons: TWeapons = {
+const drawFns: TWeapons = {
     [TWeapon.WEAPON_GUN]: {
         // https://www.svgrepo.com/svg/381281/gun-weapon-army-police-military
         draw: createDrawFn(361.1, 512, 135, 120, "m440.457.071L9.051 0v68.731l18.031 45.75L-0 284.398h121.481l17.748-111.369h76.65l19.516-51.76h163.059V74.883h42.002z"),

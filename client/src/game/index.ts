@@ -1,6 +1,6 @@
 import Input, { Mouse } from "../input";
 import GameMap from "../map";
-import { Weapons } from "../weapons";
+import { drawWeapon, drawWeaponIcon } from "../weapons";
 import { Camera } from "./camera";
 import { clamp, copyText } from "../utils";
 import { appendSystemMessage } from "../chat";
@@ -439,7 +439,7 @@ export default class Game {
         for (const player of teamA) {
             const isMe = player.id === this.myData.id;
             const bb = { x: end - padding - scoreWidth, y: padding / 2, w: playerSize, h: playerSize };
-            Weapons[player.weapon].drawIcon(this.ctx, bb, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
+            drawWeaponIcon(player.weapon, this.ctx, bb, [theme.colors.teamA, theme.colors[isMe ? "warning" : "foreground"]]);
             // render player name
             if (this.roomState && this.input.isMouseOver(bb)) {
                 playerNameOverlay = {
@@ -459,7 +459,7 @@ export default class Game {
         for (const player of teamB) {
             const isMe = player.id === this.myData.id;
             const bb = { x: start, y: padding / 2, w: playerSize, h: playerSize };
-            Weapons[player.weapon].drawIcon(this.ctx, bb, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
+            drawWeaponIcon(player.weapon, this.ctx, bb, [theme.colors.teamB, theme.colors[isMe ? "warning" : "foreground"]]);
             // render player name
             if (!playerNameOverlay && this.roomState && this.input.isMouseOver(bb)) {
                 playerNameOverlay = {
@@ -620,7 +620,8 @@ export default class Game {
                 }
 
                 // render player weapon
-                Weapons[player.weapon].draw(
+                drawWeapon(
+                    player.weapon,
                     this.ctx,
                     { w: cellWidth, h: cellHeight },
                     { pos: { x: (x + 0.5) * cellWidth, y: (y + 0.5) * cellHeight }, theta: player.theta },
