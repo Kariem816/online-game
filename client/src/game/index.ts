@@ -1,6 +1,6 @@
 import Input, { Mouse } from "../input";
 import GameMap from "../map";
-import { drawWeapon, drawWeaponIcon } from "../weapons";
+import { drawWeapon, drawWeaponIcon, drawWeaponProj } from "../weapons";
 import { Camera } from "./camera";
 import { clamp, copyText } from "../utils";
 import { appendSystemMessage } from "../chat";
@@ -634,10 +634,14 @@ export default class Game {
                 const y = projectile.y + mapHeightOffset;
                 const color = theme.colors[projectile.team === Team.TeamA ? "teamA" : "teamB"];
 
-                this.ctx.beginPath();
-                this.ctx.arc(x * cellWidth, y * cellHeight, 0.2 * cellWidth, 0, 2 * Math.PI);
-                this.ctx.fillStyle = color;
-                this.ctx.fill();
+                drawWeaponProj(
+                    projectile.weapon,
+                    this.ctx,
+                    { x: x * cellWidth, y: y * cellHeight },
+                    { x: projectile.vx, y: projectile.vy },
+                    this.settings.weapons.find((w) => w.id === projectile.weapon)!.projectileCollisionRadius * cellWidth,
+                    color
+                );
             }
 
             if (this.gameState.state.phase === GamePhases.GettingReady) {
