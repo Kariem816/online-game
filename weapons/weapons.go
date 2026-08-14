@@ -41,8 +41,9 @@ type BaseWeapon struct {
 type BaseProjectile struct {
 	Pos      omath.Vector2
 	Vel      omath.Vector2
-	TeamID   types.TeamID
 	Lifetime time.Duration
+	TeamID   types.TeamID
+	WeaponID types.WeaponID
 }
 
 func (w *BaseWeapon) ID() types.WeaponID {
@@ -98,16 +99,16 @@ func List() []types.SettingsMessageWeapon {
 	return ws
 }
 
-func serializeBaseProjectile(order binary.ByteOrder, pos omath.Vector2, vel omath.Vector2, acc float32, team types.TeamID) ([]byte, error) {
+func serializeBaseProjectile(order binary.ByteOrder, proj BaseProjectile, acc float32) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	var err error
 
-	err = pos.Write(buf, order)
+	err = proj.Pos.Write(buf, order)
 	if err != nil {
 		return nil, err
 	}
 
-	err = vel.Write(buf, order)
+	err = proj.Vel.Write(buf, order)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +118,12 @@ func serializeBaseProjectile(order binary.ByteOrder, pos omath.Vector2, vel omat
 		return nil, err
 	}
 
-	err = buf.WriteByte(uint8(team))
+	err = binary.Write(buf, order, proj.WeaponID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Write(buf, order, proj.TeamID)
 	if err != nil {
 		return nil, err
 	}

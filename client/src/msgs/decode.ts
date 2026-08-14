@@ -101,7 +101,8 @@ function decodeMsgData(
 				weapons[i] = {
 					id: view.getUint8(),
 					cooldown: view.getUint32(),
-					radius: view.getFloat32(),
+					maxRange: view.getFloat32(),
+					projectileCollisionRadius: view.getFloat32(),
 					name: view.getString(view.getUint8()),
 				};
 			}
@@ -192,6 +193,7 @@ function decodeMsgData(
 					vx: view.getFloat32(),
 					vy: view.getFloat32(),
 					acc: view.getFloat32(),
+					weapon: view.getUint8(),
 					team: view.getUint8(),
 				};
 			}

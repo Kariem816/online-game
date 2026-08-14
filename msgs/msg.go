@@ -175,6 +175,7 @@ func (wm WelcomeMessage) Buffer() (*bytes.Buffer, bool) {
 		binary.Write(buf, binary.LittleEndian, w.ID)
 		binary.Write(buf, binary.LittleEndian, w.Cooldown)
 		binary.Write(buf, binary.LittleEndian, w.Range)
+		binary.Write(buf, binary.LittleEndian, w.ProjectileCollisionRadius)
 		binary.Write(buf, binary.LittleEndian, uint8(len(w.Name)))
 		buf.WriteString(w.Name)
 	}

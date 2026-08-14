@@ -77,8 +77,9 @@ func (b *Bomb) Update() []types.Projectile {
 		projectile := BombProjectile{
 			Pos:      omath.Vector2{X: b.pos.X + 0.5, Y: b.pos.Y + 0.5},
 			Vel:      omath.Polar{R: vi, Theta: b.theta}.Vector2(),
-			TeamID:   b.teamId,
 			Lifetime: BombProjectileLifetime,
+			TeamID:   b.teamId,
+			WeaponID: b.id,
 		}
 		b.setCooldown()
 		return []types.Projectile{&projectile}
@@ -97,10 +98,11 @@ func (b *Bomb) setCooldown() {
 
 func (b *Bomb) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       b.ID(),
-		Cooldown: uint32(b.Cooldown().Milliseconds()),
-		Range:    b.maxRange,
-		Name:     b.Name(),
+		ID:                        b.ID(),
+		Cooldown:                  uint32(b.Cooldown().Milliseconds()),
+		Range:                     b.maxRange,
+		ProjectileCollisionRadius: BombProjectileRadius,
+		Name:                      b.Name(),
 	}
 }
 
@@ -156,5 +158,5 @@ func (p *BombProjectile) Team() types.TeamID {
 }
 
 func (p *BombProjectile) Serialize(order binary.ByteOrder) ([]byte, error) {
-	return serializeBaseProjectile(order, p.Pos, p.Vel, BombProjectileDeceleration, p.TeamID)
+	return serializeBaseProjectile(order, BaseProjectile(*p), BombProjectileDeceleration)
 }

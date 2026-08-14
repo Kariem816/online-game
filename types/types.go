@@ -45,10 +45,11 @@ type TileResult struct {
 }
 
 type SettingsMessageWeapon struct {
-	ID       WeaponID
-	Cooldown uint32
-	Range    float32
-	Name     string
+	ID                        WeaponID
+	Cooldown                  uint32
+	Range                     float32
+	ProjectileCollisionRadius float32
+	Name                      string
 }
 
 type GameSettings struct {

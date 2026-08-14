@@ -53,8 +53,9 @@ func (g *Gun) Update() []types.Projectile {
 		bullet := GunBullet{
 			Pos:      omath.Vector2{X: g.pos.X + 0.5, Y: g.pos.Y + 0.5},
 			Vel:      omath.Polar{R: GunBulletInitialSpeed, Theta: g.theta}.Vector2(),
-			TeamID:   g.teamId,
 			Lifetime: GunBulletLifetime,
+			TeamID:   g.teamId,
+			WeaponID: g.id,
 		}
 		g.setCooldown()
 		return []types.Projectile{&bullet}
@@ -72,10 +73,11 @@ func (g *Gun) setCooldown() {
 
 func (g *Gun) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       g.ID(),
-		Cooldown: uint32(g.Cooldown().Milliseconds()),
-		Range:    g.maxRange,
-		Name:     g.Name(),
+		ID:                        g.ID(),
+		Cooldown:                  uint32(g.Cooldown().Milliseconds()),
+		Range:                     g.maxRange,
+		ProjectileCollisionRadius: 0.2,
+		Name:                      g.Name(),
 	}
 }
 
@@ -109,5 +111,5 @@ func (b *GunBullet) Team() types.TeamID {
 }
 
 func (b *GunBullet) Serialize(order binary.ByteOrder) ([]byte, error) {
-	return serializeBaseProjectile(order, b.Pos, b.Vel, GunBulletDeceleration, b.TeamID)
+	return serializeBaseProjectile(order, BaseProjectile(*b), GunBulletDeceleration)
 }

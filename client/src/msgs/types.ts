@@ -133,6 +133,7 @@ export type StateMessage = {
 		vx: number;
 		vy: number;
 		acc: number;
+		weapon: TWeapon;
 		team: Team;
 	}[];
 };
@@ -151,7 +152,8 @@ export type RoomMessage = {
 export type SettingsMessageWeapon = {
 	id: number;
 	cooldown: number;
-	radius: number;
+	maxRange: number;
+	projectileCollisionRadius: number;
 	name: string;
 };
 

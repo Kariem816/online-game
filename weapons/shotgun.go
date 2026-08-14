@@ -63,8 +63,9 @@ func (s *Shotgun) Update() []types.Projectile {
 			shell := ShotgunShell{
 				Pos:      omath.Vector2{X: s.pos.X + 0.5, Y: s.pos.Y + 0.5},
 				Vel:      omath.Polar{R: ShotgunShellInitialSpeed, Theta: theta}.Vector2(),
-				TeamID:   s.teamId,
 				Lifetime: ShotgunShellLifetime,
+				TeamID:   s.teamId,
+				WeaponID: s.id,
 			}
 			shells[i] = &shell
 		}
@@ -84,10 +85,11 @@ func (s *Shotgun) setCooldown() {
 
 func (s *Shotgun) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       s.ID(),
-		Cooldown: uint32(s.Cooldown().Milliseconds()),
-		Range:    s.maxRange,
-		Name:     s.Name(),
+		ID:                        s.ID(),
+		Cooldown:                  uint32(s.Cooldown().Milliseconds()),
+		Range:                     s.maxRange,
+		ProjectileCollisionRadius: ShotgunShellRadius,
+		Name:                      s.Name(),
 	}
 }
 
@@ -148,5 +150,5 @@ func (s *ShotgunShell) Team() types.TeamID {
 }
 
 func (s *ShotgunShell) Serialize(order binary.ByteOrder) ([]byte, error) {
-	return serializeBaseProjectile(order, s.Pos, s.Vel, ShotgunShellDeceleration, s.TeamID)
+	return serializeBaseProjectile(order, BaseProjectile(*s), ShotgunShellDeceleration)
 }

@@ -20,13 +20,13 @@ type Rocket BaseProjectile
 // weapon parameters
 const RocketLauncherCooldown = 2000 * time.Millisecond
 
-var RocketLauncherRange = omath.UniformAccelerationMaxDistance(RocketLauncherProjectileInitialSpeed, -RocketLauncherProjectileDeceleration, RocketLauncherProjectileLifetime)
+var RocketLauncherRange = omath.UniformAccelerationMaxDistance(RocketInitialSpeed, -RocketDeceleration, RocketLifetime)
 
 // projectile parameters
-const RocketLauncherProjectileInitialSpeed = 25.0 // square units per second
-const RocketLauncherProjectileDeceleration = 1.0  // square units per second^2
-const RocketLauncherProjectileLifetime = 750 * time.Millisecond
-const RocketLauncherProjectileRadius = 0.25 // tiles
+const RocketInitialSpeed = 25.0 // square units per second
+const RocketDeceleration = 1.0  // square units per second^2
+const RocketLifetime = 750 * time.Millisecond
+const RocketRadius = 0.25 // tiles
 
 func NewRocketLauncher(team types.TeamID) *RocketLauncher {
 	return &RocketLauncher{
@@ -54,9 +54,10 @@ func (l *RocketLauncher) Update() []types.Projectile {
 	if l.held && l.cooldown == 0 {
 		projectile := Rocket{
 			Pos:      omath.Vector2{X: l.pos.X + 0.5, Y: l.pos.Y + 0.5},
-			Vel:      omath.Polar{R: RocketLauncherProjectileInitialSpeed, Theta: l.theta}.Vector2(),
+			Vel:      omath.Polar{R: RocketInitialSpeed, Theta: l.theta}.Vector2(),
+			Lifetime: RocketLifetime,
 			TeamID:   l.teamId,
-			Lifetime: RocketLauncherProjectileLifetime,
+			WeaponID: l.id,
 		}
 		l.setCooldown()
 		return []types.Projectile{&projectile}
@@ -74,21 +75,22 @@ func (l *RocketLauncher) setCooldown() {
 
 func (l *RocketLauncher) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       l.ID(),
-		Cooldown: uint32(l.Cooldown().Milliseconds()),
-		Range:    l.maxRange,
-		Name:     l.Name(),
+		ID:                        l.ID(),
+		Cooldown:                  uint32(l.Cooldown().Milliseconds()),
+		Range:                     l.maxRange,
+		ProjectileCollisionRadius: RocketRadius,
+		Name:                      l.Name(),
 	}
 }
 
 func (r *Rocket) Update(gameMap *types.GameMap) []types.TileResult {
 	dt := float32(consts.GameTick.Seconds())
-	r.Vel.Decelerate(RocketLauncherProjectileDeceleration * dt)
+	r.Vel.Decelerate(RocketDeceleration * dt)
 
 	r.Pos.X += r.Vel.X * dt
 	r.Pos.Y += r.Vel.Y * dt
 	hasHitWall := false
-	if gameMap.HasWall(r.Pos.X-RocketLauncherProjectileRadius, r.Pos.Y-RocketLauncherProjectileRadius) || gameMap.HasWall(r.Pos.X+RocketLauncherProjectileRadius, r.Pos.Y+RocketLauncherProjectileRadius) {
+	if gameMap.HasWall(r.Pos.X-RocketRadius, r.Pos.Y-RocketRadius) || gameMap.HasWall(r.Pos.X+RocketRadius, r.Pos.Y+RocketRadius) {
 		hasHitWall = true
 		r.Lifetime = 0
 	} else {
@@ -122,5 +124,5 @@ func (r *Rocket) Team() types.TeamID {
 }
 
 func (r *Rocket) Serialize(order binary.ByteOrder) ([]byte, error) {
-	return serializeBaseProjectile(order, r.Pos, r.Vel, RocketLauncherProjectileDeceleration, r.TeamID)
+	return serializeBaseProjectile(order, BaseProjectile(*r), RocketDeceleration)
 }

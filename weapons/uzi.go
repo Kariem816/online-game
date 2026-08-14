@@ -55,8 +55,9 @@ func (u *Uzi) Update() []types.Projectile {
 		projectile := UziBullet{
 			Pos:      omath.Vector2{X: u.pos.X + 0.5, Y: u.pos.Y + 0.5},
 			Vel:      omath.Polar{R: UziBulletInitialSpeed, Theta: u.theta}.Vector2(),
-			TeamID:   u.teamId,
 			Lifetime: UziBulletLifetime,
+			TeamID:   u.teamId,
+			WeaponID: u.id,
 		}
 		u.setCooldown()
 		return []types.Projectile{&projectile}
@@ -74,10 +75,11 @@ func (u *Uzi) setCooldown() {
 
 func (u *Uzi) ToSettingsMessage() types.SettingsMessageWeapon {
 	return types.SettingsMessageWeapon{
-		ID:       u.ID(),
-		Cooldown: uint32(u.Cooldown().Milliseconds()),
-		Range:    u.maxRange,
-		Name:     u.Name(),
+		ID:                        u.ID(),
+		Cooldown:                  uint32(u.Cooldown().Milliseconds()),
+		Range:                     u.maxRange,
+		ProjectileCollisionRadius: UziBulletRadius,
+		Name:                      u.Name(),
 	}
 }
 
@@ -124,5 +126,5 @@ func (b *UziBullet) Team() types.TeamID {
 }
 
 func (b *UziBullet) Serialize(order binary.ByteOrder) ([]byte, error) {
-	return serializeBaseProjectile(order, b.Pos, b.Vel, UziBulletDeceleration, b.TeamID)
+	return serializeBaseProjectile(order, BaseProjectile(*b), UziBulletDeceleration)
 }
