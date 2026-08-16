@@ -13,11 +13,20 @@ import (
 
 type Gun struct {
 	BaseWeapon
+	bulletsFired     uint32
+	abilityFirstTime bool
+	abilityActive    bool
+	abilityStartTime time.Time
 }
 type GunBullet BaseProjectile
 
 // weapon parameters
 const GunCooldown = 500 * time.Millisecond
+const GunAbilityCooldown = 10 * time.Millisecond
+const GunAbilityBulletCooldown = 100 * time.Millisecond
+const GunAbilityProbability = 0.1
+const GunAbilityActivationBulletCount = 10
+const GunAbilityInterval = 3 * time.Second
 
 var GunRange = omath.UniformAccelerationMaxDistance(GunBulletInitialSpeed, -GunBulletDeceleration, GunBulletLifetime)
 
@@ -25,6 +34,11 @@ var GunRange = omath.UniformAccelerationMaxDistance(GunBulletInitialSpeed, -GunB
 const GunBulletInitialSpeed = 15.0 // square units per second
 const GunBulletDeceleration = 1.0  // square units per second^2
 const GunBulletLifetime = 300 * time.Millisecond
+
+// projectile parameters (ability)
+const GunAbilityBulletInitialSpeed = 20.0 // square units per second
+const GunAbilityBulletDeceleration = 1.0  // square units per second^2
+const GunAbilityBulletLifetime = 500 * time.Millisecond
 
 func NewGun(team types.TeamID) *Gun {
 	return &Gun{
@@ -34,6 +48,7 @@ func NewGun(team types.TeamID) *Gun {
 			cooldown: GunCooldown,
 			maxRange: GunRange,
 		},
+		abilityFirstTime: true,
 	}
 }
 
@@ -49,16 +64,25 @@ func (g *Gun) Update() []types.Projectile {
 		g.cooldown = 0
 	}
 
-	if g.held && g.cooldown == 0 {
-		bullet := GunBullet{
-			Pos:      omath.Vector2{X: g.pos.X + 0.5, Y: g.pos.Y + 0.5},
-			Vel:      omath.Polar{R: GunBulletInitialSpeed, Theta: g.theta}.Vector2(),
-			Lifetime: GunBulletLifetime,
-			TeamID:   g.teamId,
-			WeaponID: g.id,
+	if g.abilityActive {
+		if time.Since(g.abilityStartTime) > GunAbilityInterval {
+			g.abilityActive = false
 		}
-		g.setCooldown()
-		return []types.Projectile{&bullet}
+	} else if (g.bulletsFired > 0 && g.bulletsFired%GunAbilityActivationBulletCount == 0) && omath.RandFloat32() < GunAbilityProbability && (g.abilityFirstTime || time.Since(g.abilityStartTime) > GunAbilityCooldown) {
+		g.abilityFirstTime = false
+		g.abilityActive = true
+		g.abilityStartTime = time.Now()
+	}
+
+	if g.held && g.cooldown == 0 {
+		defer func() {
+			g.setCooldown()
+			g.bulletsFired++
+		}()
+		if g.abilityActive {
+			return g.shootAbility()
+		}
+		return g.shoot()
 	}
 	return nil
 }
@@ -67,8 +91,36 @@ func (g *Gun) Cooldown() time.Duration {
 	return GunCooldown
 }
 
+func (g *Gun) shoot() []types.Projectile {
+	bullet := GunBullet{
+		Pos:      omath.Vector2{X: g.pos.X + 0.5, Y: g.pos.Y + 0.5},
+		Vel:      omath.Polar{R: GunBulletInitialSpeed, Theta: g.theta}.Vector2(),
+		Lifetime: GunBulletLifetime,
+		TeamID:   g.teamId,
+		WeaponID: g.id,
+	}
+
+	return []types.Projectile{&bullet}
+}
+
+func (g *Gun) shootAbility() []types.Projectile {
+	bullet := GunBullet{
+		Pos:      omath.Vector2{X: g.pos.X + 0.5, Y: g.pos.Y + 0.5},
+		Vel:      omath.Polar{R: GunAbilityBulletInitialSpeed, Theta: g.theta}.Vector2(),
+		Lifetime: GunAbilityBulletLifetime,
+		TeamID:   g.teamId,
+		WeaponID: g.id,
+	}
+
+	return []types.Projectile{&bullet}
+}
+
 func (g *Gun) setCooldown() {
-	g.cooldown = GunCooldown
+	if g.abilityActive {
+		g.cooldown = GunAbilityBulletCooldown
+	} else {
+		g.cooldown = GunCooldown
+	}
 }
 
 func (g *Gun) ToSettingsMessage() types.SettingsMessageWeapon {

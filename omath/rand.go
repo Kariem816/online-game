@@ -7,3 +7,7 @@ import (
 func RandMN(m, n int32) int32 {
 	return m + rand.Int31n(n-m)
 }
+
+func RandFloat32() float32 {
+	return rand.Float32()
+}
